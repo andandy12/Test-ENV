@@ -1,4 +1,4 @@
-;(function (root, factory) {
+/*;(function (root, factory) {
 
   if (typeof define === "function" && define.amd) {
     define(factory)
@@ -9,7 +9,7 @@
   }
 
 }(this, function () {
-
+*/ // this commented out so that monaco doesnt complain
 /*
 CryptoJS v3.1.2
 code.google.com/p/crypto-js
