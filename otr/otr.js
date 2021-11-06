@@ -13,12 +13,12 @@
 
   if (typeof define === 'function' && define.amd) {
     define([
-        "bigint"
+        "bigintotr"
       , "crypto"
       , "eventemitter"
-    ], function (BigInt, CryptoJS, EventEmitter) {
+    ], function (bigintotr, CryptoJS, EventEmitter) {
       var root = {
-          BigInt: BigInt
+          bigintotr: bigintotr
         , CryptoJS: CryptoJS
         , EventEmitter: EventEmitter
         , OTR: {}
@@ -94,16 +94,16 @@
 
   var root = this
 
-  var HLP = {}, CryptoJS, BigInt
+  var HLP = {}, CryptoJS, bigintotr
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = HLP = {}
     CryptoJS = require('../vendor/crypto.js')
-    BigInt = require('../vendor/bigint.js')
+    bigintotr = require('../vendor/bigintotr.js')
   } else {
     if (root.OTR) root.OTR.HLP = HLP
     if (root.DSA) root.DSA.HLP = HLP
     CryptoJS = root.CryptoJS
-    BigInt = root.BigInt
+    bigintotr = root.bigintotr
   }
 
   // data types (byte lengths)
@@ -120,7 +120,7 @@
   var WRAPPER_BEGIN = "?OTR"
     , WRAPPER_END   = "."
 
-  var TWO = BigInt.str2bigInt('2', 10)
+  var TWO = bigintotr.str2bigintotr('2', 10)
 
   HLP.debug = function (msg) {
     // used as HLP.debug.call(ctx, msg)
@@ -163,7 +163,7 @@
   }
 
   HLP.randomExponent = function () {
-    return BigInt.randBigInt(1536)
+    return bigintotr.randbigintotr(1536)
   }
 
   HLP.smpHash = function (version, fmpi, smpi) {
@@ -172,7 +172,7 @@
     sha256.update(CryptoJS.enc.Latin1.parse(HLP.packMPI(fmpi)))
     if (smpi) sha256.update(CryptoJS.enc.Latin1.parse(HLP.packMPI(smpi)))
     var hash = sha256.finalize()
-    return HLP.bits2bigInt(hash.toString(CryptoJS.enc.Latin1))
+    return HLP.bits2bigintotr(hash.toString(CryptoJS.enc.Latin1))
   }
 
   HLP.makeMac = function (aesctr, m) {
@@ -217,20 +217,20 @@
   }
 
   HLP.multPowMod = function (a, b, c, d, e) {
-    return BigInt.multMod(BigInt.powMod(a, b, e), BigInt.powMod(c, d, e), e)
+    return bigintotr.multMod(bigintotr.powMod(a, b, e), bigintotr.powMod(c, d, e), e)
   }
 
   HLP.ZKP = function (v, c, d, e) {
-    return BigInt.equals(c, HLP.smpHash(v, d, e))
+    return bigintotr.equals(c, HLP.smpHash(v, d, e))
   }
 
   // greater than, or equal
   HLP.GTOE = function (a, b) {
-    return (BigInt.equals(a, b) || BigInt.greater(a, b))
+    return (bigintotr.equals(a, b) || bigintotr.greater(a, b))
   }
 
   HLP.between = function (x, a, b) {
-    return (BigInt.greater(x, a) && BigInt.greater(b, x))
+    return (bigintotr.greater(x, a) && bigintotr.greater(b, x))
   }
 
   HLP.checkGroup = function (g, N_MINUS_2) {
@@ -296,13 +296,13 @@
     return HLP.packINT(d.length) + d
   }
 
-  HLP.bits2bigInt = function (bits) {
+  HLP.bits2bigintotr = function (bits) {
     bits = HLP.toByteArray(bits)
-    return BigInt.ba2bigInt(bits)
+    return bigintotr.ba2bigintotr(bits)
   }
 
   HLP.packMPI = function (mpi) {
-    return HLP.packData(BigInt.bigInt2bits(BigInt.trim(mpi, 0)))
+    return HLP.packData(bigintotr.bigintotr2bits(bigintotr.trim(mpi, 0)))
   }
 
   HLP.packSHORT = function (short) {
@@ -331,7 +331,7 @@
   HLP.readMPI = function (data) {
     data = HLP.toByteArray(data)
     data = HLP.readData(data)
-    return BigInt.ba2bigInt(data[1])
+    return bigintotr.ba2bigintotr(data[1])
   }
 
   HLP.packMPIs = function (arr) {
@@ -443,11 +443,11 @@
 
   var root = this
 
-  var CryptoJS, BigInt, Worker, WWPath, HLP
+  var CryptoJS, bigintotr, Worker, WWPath, HLP
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = DSA
     CryptoJS = require('../vendor/crypto.js')
-    BigInt = require('../vendor/bigint.js')
+    bigintotr = require('../vendor/bigintotr.js')
     WWPath = require('path').join(__dirname, '/dsa-webworker.js')
     HLP = require('./helpers.js')
   } else {
@@ -457,15 +457,15 @@
     })
     root.DSA = DSA
     CryptoJS = root.CryptoJS
-    BigInt = root.BigInt
+    bigintotr = root.bigintotr
     Worker = root.Worker
     WWPath = 'dsa-webworker.js'
     HLP = DSA.HLP
   }
 
-  var ZERO = BigInt.str2bigInt('0', 10)
-    , ONE = BigInt.str2bigInt('1', 10)
-    , TWO = BigInt.str2bigInt('2', 10)
+  var ZERO = bigintotr.str2bigintotr('0', 10)
+    , ONE = bigintotr.str2bigintotr('1', 10)
+    , TWO = bigintotr.str2bigintotr('2', 10)
     , KEY_TYPE = '\x00\x00'
 
   var DEBUG = false
@@ -480,35 +480,35 @@
   }
 
   function makeRandom(min, max) {
-    var c = BigInt.randBigInt(BigInt.bitSize(max))
+    var c = bigintotr.randbigintotr(bigintotr.bitSize(max))
     if (!HLP.between(c, min, max)) return makeRandom(min, max)
     return c
   }
 
-  // altered BigInt.randProbPrime()
+  // altered bigintotr.randProbPrime()
   // n rounds of Miller Rabin (after trial division with small primes)
   var rpprb = []
   function isProbPrime(k, n) {
-    var i, B = 30000, l = BigInt.bitSize(k)
-    var primes = BigInt.primes
+    var i, B = 30000, l = bigintotr.bitSize(k)
+    var primes = bigintotr.primes
 
     if (primes.length === 0)
-      primes = BigInt.findPrimes(B)
+      primes = bigintotr.findPrimes(B)
 
     if (rpprb.length != k.length)
-      rpprb = BigInt.dup(k)
+      rpprb = bigintotr.dup(k)
 
     // check ans for divisibility by small primes up to B
     for (i = 0; (i < primes.length) && (primes[i] <= B); i++)
-      if (BigInt.modInt(k, primes[i]) === 0 && !BigInt.equalsInt(k, primes[i]))
+      if (bigintotr.modInt(k, primes[i]) === 0 && !bigintotr.equalsInt(k, primes[i]))
         return 0
 
     // do n rounds of Miller Rabin, with random bases less than k
     for (i = 0; i < n; i++) {
-      BigInt.randBigInt_(rpprb, l, 0)
-      while(!BigInt.greater(k, rpprb))  // pick a random rpprb that's < k
-        BigInt.randBigInt_(rpprb, l, 0)
-      if (!BigInt.millerRabin(k, rpprb))
+      bigintotr.randbigintotr_(rpprb, l, 0)
+      while(!bigintotr.greater(k, rpprb))  // pick a random rpprb that's < k
+        bigintotr.randbigintotr_(rpprb, l, 0)
+      if (!bigintotr.millerRabin(k, rpprb))
         return 0
     }
 
@@ -533,28 +533,28 @@
 
     var N = bit_lengths[bit_length].N
 
-    var LM1 = BigInt.twoToThe(bit_length - 1)
+    var LM1 = bigintotr.twoToThe(bit_length - 1)
     var bl4 = 4 * bit_length
     var brk = false
 
     var q, p, rem, counter
     for (;;) {
 
-      q = BigInt.randBigInt(N, 1)
+      q = bigintotr.randbigintotr(N, 1)
       q[0] |= 1
 
       if (!isProbPrime(q, repeat)) continue
       t('q')
 
       for (counter = 0; counter < bl4; counter++) {
-        p = BigInt.randBigInt(bit_length, 1)
+        p = bigintotr.randbigintotr(bit_length, 1)
         p[0] |= 1
 
-        rem = BigInt.mod(p, q)
-        rem = BigInt.sub(rem, ONE)
-        p = BigInt.sub(p, rem)
+        rem = bigintotr.mod(p, q)
+        rem = bigintotr.sub(rem, ONE)
+        p = bigintotr.sub(p, rem)
 
-        if (BigInt.greater(LM1, p)) continue
+        if (bigintotr.greater(LM1, p)) continue
         if (!isProbPrime(p, repeat)) continue
 
         t('p')
@@ -566,15 +566,15 @@
       if (brk) break
     }
 
-    var h = BigInt.dup(TWO)
-    var pm1 = BigInt.sub(p, ONE)
-    var e = BigInt.multMod(pm1, BigInt.inverseMod(q, p), p)
+    var h = bigintotr.dup(TWO)
+    var pm1 = bigintotr.sub(p, ONE)
+    var e = bigintotr.multMod(pm1, bigintotr.inverseMod(q, p), p)
 
     var g
     for (;;) {
-      g = BigInt.powMod(h, e, p)
-      if (BigInt.equals(g, ONE)) {
-        h = BigInt.add(h, ONE)
+      g = bigintotr.powMod(h, e, p)
+      if (bigintotr.equals(g, ONE)) {
+        h = bigintotr.add(h, ONE)
         continue
       }
       primes[bit_length].g = g
@@ -622,7 +622,7 @@
     this.x = makeRandom(ZERO, this.q)
 
     // public keys (p, q, g, y)
-    this.y = BigInt.powMod(this.g, this.x, this.p)
+    this.y = bigintotr.powMod(this.g, this.x, this.p)
 
     // nocache?
     if (opts.nocache) primes[bit_length] = null
@@ -649,8 +649,8 @@
 
     // http://www.imperialviolet.org/2013/06/15/suddendeathentropy.html
     generateNonce: function (m) {
-      var priv = BigInt.bigInt2bits(BigInt.trim(this.x, 0))
-      var rand = BigInt.bigInt2bits(BigInt.randBigInt(256))
+      var priv = bigintotr.bigintotr2bits(bigintotr.trim(this.x, 0))
+      var rand = bigintotr.bigintotr2bits(bigintotr.randbigintotr(256))
 
       var sha256 = CryptoJS.algo.SHA256.create()
       sha256.update(CryptoJS.enc.Latin1.parse(priv))
@@ -658,23 +658,23 @@
       sha256.update(CryptoJS.enc.Latin1.parse(rand))
 
       var hash = sha256.finalize()
-      hash = HLP.bits2bigInt(hash.toString(CryptoJS.enc.Latin1))
-      BigInt.rightShift_(hash, 256 - BigInt.bitSize(this.q))
+      hash = HLP.bits2bigintotr(hash.toString(CryptoJS.enc.Latin1))
+      bigintotr.rightShift_(hash, 256 - bigintotr.bitSize(this.q))
 
       return HLP.between(hash, ZERO, this.q) ? hash : this.generateNonce(m)
     },
 
     sign: function (m) {
       m = CryptoJS.enc.Latin1.parse(m)
-      var b = BigInt.str2bigInt(m.toString(CryptoJS.enc.Hex), 16)
+      var b = bigintotr.str2bigintotr(m.toString(CryptoJS.enc.Hex), 16)
       var k, r = ZERO, s = ZERO
-      while (BigInt.isZero(s) || BigInt.isZero(r)) {
+      while (bigintotr.isZero(s) || bigintotr.isZero(r)) {
         k = this.generateNonce(m)
-        r = BigInt.mod(BigInt.powMod(this.g, k, this.p), this.q)
-        if (BigInt.isZero(r)) continue
-        s = BigInt.inverseMod(k, this.q)
-        s = BigInt.mult(s, BigInt.add(b, BigInt.mult(this.x, r)))
-        s = BigInt.mod(s, this.q)
+        r = bigintotr.mod(bigintotr.powMod(this.g, k, this.p), this.q)
+        if (bigintotr.isZero(r)) continue
+        s = bigintotr.inverseMod(k, this.q)
+        s = bigintotr.mult(s, bigintotr.add(b, bigintotr.mult(this.x, r)))
+        s = bigintotr.mod(s, this.q)
       }
       return [r, s]
     },
@@ -763,7 +763,7 @@
 
         if (val.indexOf("#") === 0) {
           val = val.substring(1, val.lastIndexOf("#"))
-          val = BigInt.str2bigInt(val, 16)
+          val = bigintotr.str2bigintotr(val, 16)
         }
 
       } else {
@@ -791,24 +791,24 @@
       return false
 
     var hm = CryptoJS.enc.Latin1.parse(m)  // CryptoJS.SHA1(m)
-    hm = BigInt.str2bigInt(hm.toString(CryptoJS.enc.Hex), 16)
+    hm = bigintotr.str2bigintotr(hm.toString(CryptoJS.enc.Hex), 16)
 
-    var w = BigInt.inverseMod(s, key.q)
-    var u1 = BigInt.multMod(hm, w, key.q)
-    var u2 = BigInt.multMod(r, w, key.q)
+    var w = bigintotr.inverseMod(s, key.q)
+    var u1 = bigintotr.multMod(hm, w, key.q)
+    var u2 = bigintotr.multMod(r, w, key.q)
 
-    u1 = BigInt.powMod(key.g, u1, key.p)
-    u2 = BigInt.powMod(key.y, u2, key.p)
+    u1 = bigintotr.powMod(key.g, u1, key.p)
+    u2 = bigintotr.powMod(key.y, u2, key.p)
 
-    var v = BigInt.mod(BigInt.multMod(u1, u2, key.p), key.q)
+    var v = bigintotr.mod(bigintotr.multMod(u1, u2, key.p), key.q)
 
-    return BigInt.equals(v, r)
+    return bigintotr.equals(v, r)
   }
 
   DSA.createInWebWorker = function (options, cb) {
     var opts = {
         path: WWPath
-      , seed: BigInt.getSeed
+      , seed: bigintotr.getSeed
     }
     if (options && typeof options === 'object')
       Object.keys(options).forEach(function (k) {
@@ -1054,18 +1054,18 @@
 
   var root = this
 
-  var CryptoJS, BigInt, CONST, HLP, DSA
+  var CryptoJS, bigintotr, CONST, HLP, DSA
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = AKE
     CryptoJS = require('../vendor/crypto.js')
-    BigInt = require('../vendor/bigint.js')
+    bigintotr = require('../vendor/bigintotr.js')
     CONST = require('./const.js')
     HLP = require('./helpers.js')
     DSA = require('./dsa.js')
   } else {
     root.OTR.AKE = AKE
     CryptoJS = root.CryptoJS
-    BigInt = root.BigInt
+    bigintotr = root.bigintotr
     CONST = root.OTR.CONST
     HLP = root.OTR.HLP
     DSA = root.DSA
@@ -1073,8 +1073,8 @@
 
   // diffie-hellman modulus
   // see group 5, RFC 3526
-  var N = BigInt.str2bigInt(CONST.N, 16)
-  var N_MINUS_2 = BigInt.sub(N, BigInt.str2bigInt('2', 10))
+  var N = bigintotr.str2bigintotr(CONST.N, 16)
+  var N_MINUS_2 = bigintotr.sub(N, bigintotr.str2bigintotr('2', 10))
 
   function hMac(gx, gy, pk, kid, m) {
     var pass = CryptoJS.enc.Latin1.parse(m)
@@ -1119,7 +1119,7 @@
     constructor: AKE,
 
     createKeys: function(g) {
-      var s = BigInt.powMod(g, this.our_dh.privateKey, N)
+      var s = bigintotr.powMod(g, this.our_dh.privateKey, N)
       var secbytes = HLP.packMPI(s)
       this.ssid = HLP.mask(HLP.h2('\x00', secbytes), 0, 64)  // first 64-bits
       var tmp = HLP.h2('\x01', secbytes)
@@ -1144,8 +1144,8 @@
       var m = hMac(their_y, our_dh_pk, x[0], x[1], m1)
       var pub = DSA.parsePublic(x[0])
 
-      var r = HLP.bits2bigInt(x[2].substring(0, 20))
-      var s = HLP.bits2bigInt(x[2].substring(20))
+      var r = HLP.bits2bigintotr(x[2].substring(0, 20))
+      var s = HLP.bits2bigintotr(x[2].substring(20))
 
       // verify sign m
       if (!DSA.verify(pub, m, r, s)) return ['Cannot verify signature of m.']
@@ -1159,8 +1159,8 @@
       var m = hMac(this.our_dh.publicKey, their_y, pk, kid, m1)
       m = this.otr.priv.sign(m)
       var msg = pk + kid
-      msg += BigInt.bigInt2bits(m[0], 20)  // pad to 20 bytes
-      msg += BigInt.bigInt2bits(m[1], 20)
+      msg += bigintotr.bigintotr2bits(m[0], 20)  // pad to 20 bytes
+      msg += bigintotr.bigintotr2bits(m[1], 20)
       msg = CryptoJS.enc.Latin1.parse(msg)
       var aesctr = HLP.packData(HLP.encryptAes(msg, c, HLP.packCtr(0)))
       var mac = HLP.makeMac(aesctr, m2)
@@ -1170,7 +1170,7 @@
     akeSuccess: function (version) {
       HLP.debug.call(this.otr, 'success')
 
-      if (BigInt.equals(this.their_y, this.our_dh.publicKey))
+      if (bigintotr.equals(this.their_y, this.our_dh.publicKey))
         return this.otr.error('equal keys - we have a problem.')
 
       this.otr.our_old_dh = this.our_dh
@@ -1178,9 +1178,9 @@
 
       if (!(
         (this.their_keyid === this.otr.their_keyid &&
-         BigInt.equals(this.their_y, this.otr.their_y)) ||
+         bigintotr.equals(this.their_y, this.otr.their_y)) ||
         (this.their_keyid === (this.otr.their_keyid - 1) &&
-         BigInt.equals(this.their_y, this.otr.their_old_y))
+         bigintotr.equals(this.their_y, this.otr.their_old_y))
       )) {
 
         this.otr.their_y = this.their_y
@@ -1235,7 +1235,7 @@
           if (this.otr.authstate === CONST.AUTHSTATE_AWAITING_DHKEY) {
             var ourHash = HLP.readMPI(this.myhashed)
             var theirHash = HLP.readMPI(msg[1])
-            if (BigInt.greater(ourHash, theirHash)) {
+            if (bigintotr.greater(ourHash, theirHash)) {
               type = '\x02'
               send = this.dhcommit
               break  // ignore
@@ -1266,7 +1266,7 @@
 
           if (this.otr.authstate !== CONST.AUTHSTATE_AWAITING_DHKEY) {
             if (this.otr.authstate === CONST.AUTHSTATE_AWAITING_SIG) {
-              if (!BigInt.equals(this.their_y, HLP.readMPI(msg[0]))) return
+              if (!bigintotr.equals(this.their_y, HLP.readMPI(msg[0]))) return
             } else {
               return  // ignore
             }
@@ -1302,7 +1302,7 @@
           this.r = HLP.readMPI(msg[0])
 
           // decrypt their_y
-          var key = CryptoJS.enc.Hex.parse(BigInt.bigInt2str(this.r, 16))
+          var key = CryptoJS.enc.Hex.parse(bigintotr.bigintotr2str(this.r, 16))
           key = CryptoJS.enc.Latin1.stringify(key)
 
           var gxmpi = HLP.decryptAes(this.encrypted, key, HLP.packCtr(0))
@@ -1432,8 +1432,8 @@
       var gxmpi = HLP.packMPI(this.our_dh.publicKey)
       gxmpi = CryptoJS.enc.Latin1.parse(gxmpi)
 
-      this.r = BigInt.randBigInt(128)
-      var key = CryptoJS.enc.Hex.parse(BigInt.bigInt2str(this.r, 16))
+      this.r = bigintotr.randbigintotr(128)
+      var key = CryptoJS.enc.Hex.parse(bigintotr.bigintotr2str(this.r, 16))
       key = CryptoJS.enc.Latin1.stringify(key)
 
       this.myhashed = CryptoJS.SHA256(gxmpi)
@@ -1453,18 +1453,18 @@
 
   var root = this
 
-  var CryptoJS, BigInt,  EventEmitter, CONST, HLP
+  var CryptoJS, bigintotr,  EventEmitter, CONST, HLP
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = SM
     CryptoJS = require('../vendor/crypto.js')
-    BigInt = require('../vendor/bigint.js')
+    bigintotr = require('../vendor/bigintotr.js')
     EventEmitter = require('../vendor/eventemitter.js')
     CONST = require('./const.js')
     HLP = require('./helpers.js')
   } else {
     root.OTR.SM = SM
     CryptoJS = root.CryptoJS
-    BigInt = root.BigInt
+    bigintotr = root.bigintotr
     EventEmitter = root.EventEmitter
     CONST = root.OTR.CONST
     HLP = root.OTR.HLP
@@ -1472,13 +1472,13 @@
 
   // diffie-hellman modulus and generator
   // see group 5, RFC 3526
-  var G = BigInt.str2bigInt(CONST.G, 10)
-  var N = BigInt.str2bigInt(CONST.N, 16)
-  var N_MINUS_2 = BigInt.sub(N, BigInt.str2bigInt('2', 10))
+  var G = bigintotr.str2bigintotr(CONST.G, 10)
+  var N = bigintotr.str2bigintotr(CONST.N, 16)
+  var N_MINUS_2 = bigintotr.sub(N, bigintotr.str2bigintotr('2', 10))
 
   // to calculate D's for zero-knowledge proofs
-  var Q = BigInt.sub(N, BigInt.str2bigInt('1', 10))
-  BigInt.divInt_(Q, 2)  // meh
+  var Q = bigintotr.sub(N, bigintotr.str2bigintotr('1', 10))
+  bigintotr.divInt_(Q, 2)  // meh
 
   function SM(reqs) {
     if (!(this instanceof SM)) return new SM(reqs)
@@ -1513,43 +1513,43 @@
     sha256.update(CryptoJS.enc.Latin1.parse(this.ssid))
     sha256.update(CryptoJS.enc.Latin1.parse(secret))
     var hash = sha256.finalize()
-    this.secret = HLP.bits2bigInt(hash.toString(CryptoJS.enc.Latin1))
+    this.secret = HLP.bits2bigintotr(hash.toString(CryptoJS.enc.Latin1))
   }
 
   SM.prototype.makeG2s = function () {
     this.a2 = HLP.randomExponent()
     this.a3 = HLP.randomExponent()
-    this.g2a = BigInt.powMod(G, this.a2, N)
-    this.g3a = BigInt.powMod(G, this.a3, N)
+    this.g2a = bigintotr.powMod(G, this.a2, N)
+    this.g3a = bigintotr.powMod(G, this.a3, N)
     if ( !HLP.checkGroup(this.g2a, N_MINUS_2) ||
          !HLP.checkGroup(this.g3a, N_MINUS_2)
     ) this.makeG2s()
   }
 
   SM.prototype.computeGs = function (g2a, g3a) {
-    this.g2 = BigInt.powMod(g2a, this.a2, N)
-    this.g3 = BigInt.powMod(g3a, this.a3, N)
+    this.g2 = bigintotr.powMod(g2a, this.a2, N)
+    this.g3 = bigintotr.powMod(g3a, this.a3, N)
   }
 
   SM.prototype.computePQ = function (r) {
-    this.p = BigInt.powMod(this.g3, r, N)
+    this.p = bigintotr.powMod(this.g3, r, N)
     this.q = HLP.multPowMod(G, r, this.g2, this.secret, N)
   }
 
   SM.prototype.computeR = function () {
-    this.r = BigInt.powMod(this.QoQ, this.a3, N)
+    this.r = bigintotr.powMod(this.QoQ, this.a3, N)
   }
 
   SM.prototype.computeRab = function (r) {
-    return BigInt.powMod(r, this.a3, N)
+    return bigintotr.powMod(r, this.a3, N)
   }
 
   SM.prototype.computeC = function (v, r) {
-    return HLP.smpHash(v, BigInt.powMod(G, r, N))
+    return HLP.smpHash(v, bigintotr.powMod(G, r, N))
   }
 
   SM.prototype.computeD = function (r, a, c) {
-    return BigInt.subMod(r, BigInt.multMod(a, c, Q), Q)
+    return bigintotr.subMod(r, bigintotr.multMod(a, c, Q), Q)
   }
 
   // the bulk of the work
@@ -1659,7 +1659,7 @@
         // verify znp of cP
         t1 = HLP.multPowMod(this.g3, msg[9], msg[6], msg[8], N)
         t2 = HLP.multPowMod(G, msg[9], this.g2, msg[10], N)
-        t2 = BigInt.multMod(t2, BigInt.powMod(msg[7], msg[8], N), N)
+        t2 = bigintotr.multMod(t2, bigintotr.powMod(msg[7], msg[8], N), N)
 
         if (!HLP.ZKP(5, msg[8], t1, t2))
           return this.abort()
@@ -1672,21 +1672,21 @@
         var r5 = HLP.randomExponent()
         var r6 = HLP.randomExponent()
         var tmp = HLP.multPowMod(G, r5, this.g2, r6, N)
-        var cP = HLP.smpHash(6, BigInt.powMod(this.g3, r5, N), tmp)
+        var cP = HLP.smpHash(6, bigintotr.powMod(this.g3, r5, N), tmp)
         var d5 = this.computeD(r5, r4, cP)
         var d6 = this.computeD(r6, this.secret, cP)
 
         // store these
-        this.QoQ = BigInt.divMod(this.q, msg[7], N)
-        this.PoP = BigInt.divMod(this.p, msg[6], N)
+        this.QoQ = bigintotr.divMod(this.q, msg[7], N)
+        this.PoP = bigintotr.divMod(this.p, msg[6], N)
 
         this.computeR()
 
         // zero-knowledge proof that R
         // was generated according to the protocol
         r7 = HLP.randomExponent()
-        tmp2 = BigInt.powMod(this.QoQ, r7, N)
-        cR = HLP.smpHash(7, BigInt.powMod(G, r7, N), tmp2)
+        tmp2 = bigintotr.powMod(this.QoQ, r7, N)
+        cR = HLP.smpHash(7, bigintotr.powMod(G, r7, N), tmp2)
         d7 = this.computeD(r7, this.a3, cR)
 
         this.smpstate = CONST.SMPSTATE_EXPECT4
@@ -1722,14 +1722,14 @@
         // verify znp of cP
         t1 = HLP.multPowMod(this.g3, msg[3], msg[0], msg[2], N)
         t2 = HLP.multPowMod(G, msg[3], this.g2, msg[4], N)
-        t2 = BigInt.multMod(t2, BigInt.powMod(msg[1], msg[2], N), N)
+        t2 = bigintotr.multMod(t2, bigintotr.powMod(msg[1], msg[2], N), N)
 
         if (!HLP.ZKP(6, msg[2], t1, t2))
           return this.abort()
 
         // verify znp of cR
         t3 = HLP.multPowMod(G, msg[7], this.g3ao, msg[6], N)
-        this.QoQ = BigInt.divMod(msg[1], this.q, N)  // save Q over Q
+        this.QoQ = bigintotr.divMod(msg[1], this.q, N)  // save Q over Q
         t4 = HLP.multPowMod(this.QoQ, msg[7], msg[5], msg[6], N)
 
         if (!HLP.ZKP(7, msg[6], t3, t4))
@@ -1740,15 +1740,15 @@
         // zero-knowledge proof that R
         // was generated according to the protocol
         r7 = HLP.randomExponent()
-        tmp2 = BigInt.powMod(this.QoQ, r7, N)
-        cR = HLP.smpHash(8, BigInt.powMod(G, r7, N), tmp2)
+        tmp2 = bigintotr.powMod(this.QoQ, r7, N)
+        cR = HLP.smpHash(8, bigintotr.powMod(G, r7, N), tmp2)
         d7 = this.computeD(r7, this.a3, cR)
 
         send = HLP.packINT(3) + HLP.packMPIs([ this.r, cR, d7 ])
         send = HLP.packTLV(5, send)
 
         rab = this.computeRab(msg[5])
-        trust = !!BigInt.equals(rab, BigInt.divMod(msg[0], this.p, N))
+        trust = !!bigintotr.equals(rab, bigintotr.divMod(msg[0], this.p, N))
 
         this.trigger('trust', [trust, 'answered'])
         this.init()
@@ -1771,7 +1771,7 @@
           return this.abort()
 
         rab = this.computeRab(msg[0])
-        trust = !!BigInt.equals(rab, this.PoP)
+        trust = !!bigintotr.equals(rab, this.PoP)
 
         this.trigger('trust', [trust, 'asked'])
         this.init()
@@ -1813,7 +1813,7 @@
     var r5 = HLP.randomExponent()
     var r6 = HLP.randomExponent()
     var tmp = HLP.multPowMod(G, r5, this.g2, r6, N)
-    var cP = HLP.smpHash(5, BigInt.powMod(this.g3, r5, N), tmp)
+    var cP = HLP.smpHash(5, bigintotr.powMod(this.g3, r5, N), tmp)
     var d5 = this.computeD(r5, r4, cP)
     var d6 = this.computeD(r6, this.secret, cP)
 
@@ -1889,12 +1889,12 @@
 
   var root = this
 
-  var CryptoJS, BigInt, EventEmitter, Worker, SMWPath
+  var CryptoJS, bigintotr, EventEmitter, Worker, SMWPath
     , CONST, HLP, Parse, AKE, SM, DSA
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = OTR
     CryptoJS = require('../vendor/crypto.js')
-    BigInt = require('../vendor/bigint.js')
+    bigintotr = require('../vendor/bigintotr.js')
     EventEmitter = require('../vendor/eventemitter.js')
     SMWPath = require('path').join(__dirname, '/sm-webworker.js')
     CONST = require('./const.js')
@@ -1912,7 +1912,7 @@
     })
     root.OTR = OTR
     CryptoJS = root.CryptoJS
-    BigInt = root.BigInt
+    bigintotr = root.bigintotr
     EventEmitter = root.EventEmitter
     Worker = root.Worker
     SMWPath = 'sm-webworker.js'
@@ -1926,8 +1926,8 @@
 
   // diffie-hellman modulus and generator
   // see group 5, RFC 3526
-  var G = BigInt.str2bigInt(CONST.G, 10)
-  var N = BigInt.str2bigInt(CONST.N, 16)
+  var G = bigintotr.str2bigintotr(CONST.G, 10)
+  var N = bigintotr.str2bigintotr(CONST.N, 16)
 
   // JavaScript integers
   var MAX_INT = Math.pow(2, 53) - 1  // doubles
@@ -2045,7 +2045,7 @@
     this.otr = otr
     var opts = {
         path: SMWPath
-      , seed: BigInt.getSeed
+      , seed: bigintotr.getSeed
     }
     if (typeof otr.smw === 'object')
       Object.keys(otr.smw).forEach(function (k) {
@@ -2145,8 +2145,8 @@
   }
 
   OTR.prototype.dh = function dh() {
-    var keys = { privateKey: BigInt.randBigInt(320) }
-    keys.publicKey = BigInt.powMod(G, keys.privateKey, N)
+    var keys = { privateKey: bigintotr.randbigintotr(320) }
+    keys.publicKey = bigintotr.powMod(G, keys.privateKey, N)
     return keys
   }
 
@@ -2155,14 +2155,14 @@
     if (!(this instanceof DHSession)) return new DHSession(our_dh, their_y)
 
     // shared secret
-    var s = BigInt.powMod(their_y, our_dh.privateKey, N)
+    var s = bigintotr.powMod(their_y, our_dh.privateKey, N)
     var secbytes = HLP.packMPI(s)
 
     // session id
     this.id = HLP.mask(HLP.h2('\x00', secbytes), 0, 64)  // first 64-bits
 
     // are we the high or low end of the connection?
-    var sq = BigInt.greater(our_dh.publicKey, their_y)
+    var sq = bigintotr.greater(our_dh.publicKey, their_y)
     var sendbyte = sq ? '\x01' : '\x02'
     var rcvbyte  = sq ? '\x02' : '\x01'
 
@@ -2623,10 +2623,10 @@
   // attach methods
 
   OTR.makeInstanceTag = function () {
-    var num = BigInt.randBigInt(32)
-    if (BigInt.greater(BigInt.str2bigInt('100', 16), num))
+    var num = bigintotr.randbigintotr(32)
+    if (bigintotr.greater(bigintotr.str2bigintotr('100', 16), num))
       return OTR.makeInstanceTag()
-    return HLP.packINT(parseInt(BigInt.bigInt2str(num, 10), 10))
+    return HLP.packINT(parseInt(bigintotr.bigintotr2str(num, 10), 10))
   }
 
 }).call(this)
