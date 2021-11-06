@@ -5,7 +5,7 @@
   } else if (typeof module !== 'undefined' && module.exports) {
     module.exports = factory(require('crypto'))
   } else {
-    root.BigInt = factory(root.crypto || root.msCrypto)
+    root.bigintotr = factory(root.crypto || root.msCrypto)
   }
 
 }(this, function (crypto) {
@@ -26,15 +26,15 @@
   // v 5.3  21 Sep 2009
   //   - added randProbPrime(k) for probable primes
   //   - unrolled loop in mont_ (slightly faster)
-  //   - millerRabin now takes a bigInt parameter rather than an int
+  //   - millerRabin now takes a bigintotr parameter rather than an int
   //
   // v 5.2  15 Sep 2009
-  //   - fixed capitalization in call to int2bigInt in randBigInt
+  //   - fixed capitalization in call to int2bigintotr in randbigintotr
   //     (thanks to Emili Evripidou, Reinhold Behringer, and Samuel Macaleese for finding that bug)
   //
   // v 5.1  8 Oct 2007 
   //   - renamed inverseModInt_ to inverseModInt since it doesn't change its parameters
-  //   - added functions GCD and randBigInt, which call GCD_ and randBigInt_
+  //   - added functions GCD and randbigintotr, which call GCD_ and randbigintotr_
   //   - fixed a bug found by Rob Visser (see comment with his name below)
   //   - improved comments
   //
@@ -45,11 +45,11 @@
   // It would also be nice if my name and URL were left in the comments.  But none 
   // of that is required.
   //
-  // This code defines a bigInt library for arbitrary-precision integers.
-  // A bigInt is an array of integers storing the value in chunks of bpe bits, 
+  // This code defines a bigintotr library for arbitrary-precision integers.
+  // A bigintotr is an array of integers storing the value in chunks of bpe bits, 
   // little endian (buff[0] is the least significant word).
-  // Negative bigInts are stored two's complement.  Almost all the functions treat
-  // bigInts as nonnegative.  The few that view them as two's complement say so
+  // Negative bigintotrs are stored two's complement.  Almost all the functions treat
+  // bigintotrs as nonnegative.  The few that view them as two's complement say so
   // in their comments.  Some functions assume their parameters have at least one 
   // leading zero element. Functions with an underscore at the end of the name put
   // their answer into one of the arrays passed in, and have unpredictable behavior 
@@ -65,7 +65,7 @@
   // their parameters; they always allocate new memory for the answer that is returned.
   //
   // These functions are designed to avoid frequent dynamic memory allocation in the inner loop.
-  // For most functions, if it needs a BigInt as a local variable it will actually use
+  // For most functions, if it needs a bigintotr as a local variable it will actually use
   // a global, and will only allocate to it only when it's not the right size.  This ensures
   // that when a function is called repeatedly with same-sized parameters, it only allocates
   // memory on the first call.
@@ -73,83 +73,83 @@
   // Note that for cryptographic purposes, the calls to Math.random() must 
   // be replaced with calls to a better pseudorandom number generator.
   //
-  // In the following, "bigInt" means a bigInt with at least one leading zero element,
+  // In the following, "bigintotr" means a bigintotr with at least one leading zero element,
   // and "integer" means a nonnegative integer less than radix.  In some cases, integer 
-  // can be negative.  Negative bigInts are 2s complement.
+  // can be negative.  Negative bigintotrs are 2s complement.
   // 
   // The following functions do not modify their inputs.
-  // Those returning a bigInt, string, or Array will dynamically allocate memory for that value.
+  // Those returning a bigintotr, string, or Array will dynamically allocate memory for that value.
   // Those returning a boolean will return the integer 0 (false) or 1 (true).
   // Those returning boolean or int will not allocate memory except possibly on the first 
   // time they're called with a given parameter size.
   // 
-  // bigInt  add(x,y)               //return (x+y) for bigInts x and y.  
-  // bigInt  addInt(x,n)            //return (x+n) where x is a bigInt and n is an integer.
-  // string  bigInt2str(x,base)     //return a string form of bigInt x in a given base, with 2 <= base <= 95
-  // int     bitSize(x)             //return how many bits long the bigInt x is, not counting leading zeros
-  // bigInt  dup(x)                 //return a copy of bigInt x
-  // boolean equals(x,y)            //is the bigInt x equal to the bigint y?
-  // boolean equalsInt(x,y)         //is bigint x equal to integer y?
-  // bigInt  expand(x,n)            //return a copy of x with at least n elements, adding leading zeros if needed
+  // bigintotr  add(x,y)               //return (x+y) for bigintotrs x and y.  
+  // bigintotr  addInt(x,n)            //return (x+n) where x is a bigintotr and n is an integer.
+  // string  bigintotr2str(x,base)     //return a string form of bigintotr x in a given base, with 2 <= base <= 95
+  // int     bitSize(x)             //return how many bits long the bigintotr x is, not counting leading zeros
+  // bigintotr  dup(x)                 //return a copy of bigintotr x
+  // boolean equals(x,y)            //is the bigintotr x equal to the bigintotr y?
+  // boolean equalsInt(x,y)         //is bigintotr x equal to integer y?
+  // bigintotr  expand(x,n)            //return a copy of x with at least n elements, adding leading zeros if needed
   // Array   findPrimes(n)          //return array of all primes less than integer n
-  // bigInt  GCD(x,y)               //return greatest common divisor of bigInts x and y (each with same number of elements).
-  // boolean greater(x,y)           //is x>y?  (x and y are nonnegative bigInts)
+  // bigintotr  GCD(x,y)               //return greatest common divisor of bigintotrs x and y (each with same number of elements).
+  // boolean greater(x,y)           //is x>y?  (x and y are nonnegative bigintotrs)
   // boolean greaterShift(x,y,shift)//is (x <<(shift*bpe)) > y?
-  // bigInt  int2bigInt(t,n,m)      //return a bigInt equal to integer t, with at least n bits and m array elements
-  // bigInt  inverseMod(x,n)        //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
+  // bigintotr  int2bigintotr(t,n,m)      //return a bigintotr equal to integer t, with at least n bits and m array elements
+  // bigintotr  inverseMod(x,n)        //return (x**(-1) mod n) for bigintotrs x and n.  If no inverse exists, it returns null
   // int     inverseModInt(x,n)     //return x**(-1) mod n, for integers x and n.  Return 0 if there is no inverse
-  // boolean isZero(x)              //is the bigInt x equal to zero?
-  // boolean millerRabin(x,b)       //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is bigInt, 1<b<x)
-  // boolean millerRabinInt(x,b)    //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is int,    1<b<x)
-  // bigInt  mod(x,n)               //return a new bigInt equal to (x mod n) for bigInts x and n.
-  // int     modInt(x,n)            //return x mod n for bigInt x and integer n.
-  // bigInt  mult(x,y)              //return x*y for bigInts x and y. This is faster when y<x.
-  // bigInt  multMod(x,y,n)         //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
-  // boolean negative(x)            //is bigInt x negative?
-  // bigInt  powMod(x,y,n)          //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
-  // bigInt  randBigInt(n,s)        //return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
-  // bigInt  randTruePrime(k)       //return a new, random, k-bit, true prime bigInt using Maurer's algorithm.
-  // bigInt  randProbPrime(k)       //return a new, random, k-bit, probable prime bigInt (probability it's composite less than 2^-80).
-  // bigInt  str2bigInt(s,b,n,m)    //return a bigInt for number represented in string s in base b with at least n bits and m array elements
-  // bigInt  sub(x,y)               //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
-  // bigInt  trim(x,k)              //return a copy of x with exactly k leading zero elements
+  // boolean isZero(x)              //is the bigintotr x equal to zero?
+  // boolean millerRabin(x,b)       //does one round of Miller-Rabin base integer b say that bigintotr x is possibly prime? (b is bigintotr, 1<b<x)
+  // boolean millerRabinInt(x,b)    //does one round of Miller-Rabin base integer b say that bigintotr x is possibly prime? (b is int,    1<b<x)
+  // bigintotr  mod(x,n)               //return a new bigintotr equal to (x mod n) for bigintotrs x and n.
+  // int     modInt(x,n)            //return x mod n for bigintotr x and integer n.
+  // bigintotr  mult(x,y)              //return x*y for bigintotrs x and y. This is faster when y<x.
+  // bigintotr  multMod(x,y,n)         //return (x*y mod n) for bigintotrs x,y,n.  For greater speed, let y<x.
+  // boolean negative(x)            //is bigintotr x negative?
+  // bigintotr  powMod(x,y,n)          //return (x**y mod n) where x,y,n are bigintotrs and ** is exponentiation.  0**0=1. Faster for odd n.
+  // bigintotr  randbigintotr(n,s)        //return an n-bit random bigintotr (n>=1).  If s=1, then the most significant of those n bits is set to 1.
+  // bigintotr  randTruePrime(k)       //return a new, random, k-bit, true prime bigintotr using Maurer's algorithm.
+  // bigintotr  randProbPrime(k)       //return a new, random, k-bit, probable prime bigintotr (probability it's composite less than 2^-80).
+  // bigintotr  str2bigintotr(s,b,n,m)    //return a bigintotr for number represented in string s in base b with at least n bits and m array elements
+  // bigintotr  sub(x,y)               //return (x-y) for bigintotrs x and y.  Negative answers will be 2s complement
+  // bigintotr  trim(x,k)              //return a copy of x with exactly k leading zero elements
   //
   //
   // The following functions each have a non-underscored version, which most users should call instead.
   // These functions each write to a single parameter, and the caller is responsible for ensuring the array 
   // passed in is large enough to hold the result. 
   //
-  // void    addInt_(x,n)          //do x=x+n where x is a bigInt and n is an integer
-  // void    add_(x,y)             //do x=x+y for bigInts x and y
-  // void    copy_(x,y)            //do x=y on bigInts x and y
-  // void    copyInt_(x,n)         //do x=n on bigInt x and integer n
-  // void    GCD_(x,y)             //set x to the greatest common divisor of bigInts x and y, (y is destroyed).  (This never overflows its array).
-  // boolean inverseMod_(x,n)      //do x=x**(-1) mod n, for bigInts x and n. Returns 1 (0) if inverse does (doesn't) exist
-  // void    mod_(x,n)             //do x=x mod n for bigInts x and n. (This never overflows its array).
-  // void    mult_(x,y)            //do x=x*y for bigInts x and y.
-  // void    multMod_(x,y,n)       //do x=x*y  mod n for bigInts x,y,n.
-  // void    powMod_(x,y,n)        //do x=x**y mod n, where x,y,n are bigInts (n is odd) and ** is exponentiation.  0**0=1.
-  // void    randBigInt_(b,n,s)    //do b = an n-bit random BigInt. if s=1, then nth bit (most significant bit) is set to 1. n>=1.
+  // void    addInt_(x,n)          //do x=x+n where x is a bigintotr and n is an integer
+  // void    add_(x,y)             //do x=x+y for bigintotrs x and y
+  // void    copy_(x,y)            //do x=y on bigintotrs x and y
+  // void    copyInt_(x,n)         //do x=n on bigintotr x and integer n
+  // void    GCD_(x,y)             //set x to the greatest common divisor of bigintotrs x and y, (y is destroyed).  (This never overflows its array).
+  // boolean inverseMod_(x,n)      //do x=x**(-1) mod n, for bigintotrs x and n. Returns 1 (0) if inverse does (doesn't) exist
+  // void    mod_(x,n)             //do x=x mod n for bigintotrs x and n. (This never overflows its array).
+  // void    mult_(x,y)            //do x=x*y for bigintotrs x and y.
+  // void    multMod_(x,y,n)       //do x=x*y  mod n for bigintotrs x,y,n.
+  // void    powMod_(x,y,n)        //do x=x**y mod n, where x,y,n are bigintotrs (n is odd) and ** is exponentiation.  0**0=1.
+  // void    randbigintotr_(b,n,s)    //do b = an n-bit random bigintotr. if s=1, then nth bit (most significant bit) is set to 1. n>=1.
   // void    randTruePrime_(ans,k) //do ans = a random k-bit true random prime (not just probable prime) with 1 in the msb.
-  // void    sub_(x,y)             //do x=x-y for bigInts x and y. Negative answers will be 2s complement.
+  // void    sub_(x,y)             //do x=x-y for bigintotrs x and y. Negative answers will be 2s complement.
   //
   // The following functions do NOT have a non-underscored version. 
-  // They each write a bigInt result to one or more parameters.  The caller is responsible for
+  // They each write a bigintotr result to one or more parameters.  The caller is responsible for
   // ensuring the arrays passed in are large enough to hold the results. 
   //
   // void addShift_(x,y,ys)       //do x=x+(y<<(ys*bpe))
-  // void carry_(x)               //do carries and borrows so each element of the bigInt x fits in bpe bits.
+  // void carry_(x)               //do carries and borrows so each element of the bigintotr x fits in bpe bits.
   // void divide_(x,y,q,r)        //divide x by y giving quotient q and remainder r
-  // int  divInt_(x,n)            //do x=floor(x/n) for bigInt x and integer n, and return the remainder. (This never overflows its array).
-  // int  eGCD_(x,y,d,a,b)        //sets a,b,d to positive bigInts such that d = GCD_(x,y) = a*x-b*y
-  // void halve_(x)               //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement.  (This never overflows its array).
-  // void leftShift_(x,n)         //left shift bigInt x by n bits.  n<bpe.
-  // void linComb_(x,y,a,b)       //do x=a*x+b*y for bigInts x and y and integers a and b
-  // void linCombShift_(x,y,b,ys) //do x=x+b*(y<<(ys*bpe)) for bigInts x and y, and integers b and ys
+  // int  divInt_(x,n)            //do x=floor(x/n) for bigintotr x and integer n, and return the remainder. (This never overflows its array).
+  // int  eGCD_(x,y,d,a,b)        //sets a,b,d to positive bigintotrs such that d = GCD_(x,y) = a*x-b*y
+  // void halve_(x)               //do x=floor(|x|/2)*sgn(x) for bigintotr x in 2's complement.  (This never overflows its array).
+  // void leftShift_(x,n)         //left shift bigintotr x by n bits.  n<bpe.
+  // void linComb_(x,y,a,b)       //do x=a*x+b*y for bigintotrs x and y and integers a and b
+  // void linCombShift_(x,y,b,ys) //do x=x+b*(y<<(ys*bpe)) for bigintotrs x and y, and integers b and ys
   // void mont_(x,y,n,np)         //Montgomery multiplication (see comments where the function is defined)
-  // void multInt_(x,n)           //do x=x*n where x is a bigInt and n is an integer.
-  // void rightShift_(x,n)        //right shift bigInt x by n bits. (This never overflows its array).
-  // void squareMod_(x,n)         //do x=x*x  mod n for bigInts x,n
+  // void multInt_(x,n)           //do x=x*n where x is a bigintotr and n is an integer.
+  // void rightShift_(x,n)        //right shift bigintotr x by n bits. (This never overflows its array).
+  // void squareMod_(x,n)         //do x=x*x  mod n for bigintotrs x,n
   // void subShift_(x,y,ys)       //do x=x-(y<<(ys*bpe)). Negative answers will be 2s complement.
   //
   // The following functions are based on algorithms from the _Handbook of Applied Cryptography_
@@ -204,7 +204,7 @@
   //the digits for converting to different bases
   var digitsStr='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_=!@#$%^&*()[]{}|;:,.<>/?`~ \\\'\"+-';
 
-  var one=int2bigInt(1,1,1);     //constant used in powMod_()
+  var one=int2bigintotr(1,1,1);     //constant used in powMod_()
 
   //the following global variables are scratchpad memory to 
   //reduce dynamic memory allocation in the inner loop
@@ -215,7 +215,7 @@
   var s2=t;       //used in powMod_(), multMod_()
   var s3=t;       //used in powMod_()
   var s4=t, s5=t; //used in mod_()
-  var s6=t;       //used in bigInt2str()
+  var s6=t;       //used in bigintotr2str()
   var s7=t;       //used in powMod_()
   var T=t;        //used in GCD_()
   var sa=t;       //used in mont_()
@@ -254,7 +254,7 @@
 
 
   //does a single round of Miller-Rabin base b consider x to be a possible prime?
-  //x is a bigInt, and b is an integer, with b<x
+  //x is a bigintotr, and b is an integer, with b<x
   function millerRabinInt(x,b) {
     if (mr_x1.length!=x.length) {
       mr_x1=dup(x);
@@ -267,7 +267,7 @@
   }
 
   //does a single round of Miller-Rabin base b consider x to be a possible prime?
-  //x and b are bigInts with b<x
+  //x and b are bigintotrs with b<x
   function millerRabin(x,b) {
     var i,j,k,s;
 
@@ -298,7 +298,7 @@
           k++;
     */
 
-    /* http://www.javascripter.net/math/primes/millerrabinbug-bigint54.htm */
+    /* http://www.javascripter.net/math/primes/millerrabinbug-bigintotr54.htm */
     if (isZero(mr_r)) return 0;
     for (k=0; mr_r[k]==0; k++);
     for (i=1,j=2; mr_r[k]%j==0; j*=2,i++ );
@@ -326,7 +326,7 @@
     return 1;  
   }
 
-  //returns how many bits long the bigInt is, not counting leading zeros.
+  //returns how many bits long the bigintotr is, not counting leading zeros.
   function bitSize(x) {
     var j,z,w;
     for (j=x.length-1; (x[j]==0) && (j>0); j--);
@@ -337,14 +337,14 @@
 
   //return a copy of x with at least n elements, adding leading zeros if needed
   function expand(x,n) {
-    var ans=int2bigInt(0,(x.length>n ? x.length : n)*bpe,0);
+    var ans=int2bigintotr(0,(x.length>n ? x.length : n)*bpe,0);
     copy_(ans,x);
     return ans;
   }
 
   //return a k-bit true random prime using Maurer's algorithm.
   function randTruePrime(k) {
-    var ans=int2bigInt(0,k,0);
+    var ans=int2bigintotr(0,k,0);
     randTruePrime_(ans,k);
     return trim(ans,1);
   }
@@ -368,7 +368,7 @@
   function randProbPrimeRounds(k,n) {
     var ans, i, divisible, B; 
     B=30000;  //B is largest prime to use in trial division
-    ans=int2bigInt(0,k,0);
+    ans=int2bigintotr(0,k,0);
     
     //optimization: try larger and smaller B to find the best limit.
     
@@ -383,7 +383,7 @@
       //   random element of the list of all numbers in [0,L) not divisible by any prime up to p.
       //   This can reduce the amount of random number generation.
       
-      randBigInt_(ans,k,0); //ans = a random odd number to check
+      randbigintotr_(ans,k,0); //ans = a random odd number to check
       ans[0] |= 1; 
       divisible=0;
     
@@ -398,9 +398,9 @@
       
       //do n rounds of Miller Rabin, with random bases less than ans
       for (i=0; i<n && !divisible; i++) {
-        randBigInt_(rpprb,k,0);
+        randbigintotr_(rpprb,k,0);
         while(!greater(ans,rpprb)) //pick a random rpprb that's < ans
-          randBigInt_(rpprb,k,0);
+          randbigintotr_(rpprb,k,0);
         if (!millerRabin(ans,rpprb))
           divisible=1;
       }
@@ -410,49 +410,49 @@
     }  
   }
 
-  //return a new bigInt equal to (x mod n) for bigInts x and n.
+  //return a new bigintotr equal to (x mod n) for bigintotrs x and n.
   function mod(x,n) {
     var ans=dup(x);
     mod_(ans,n);
     return trim(ans,1);
   }
 
-  //return (x+n) where x is a bigInt and n is an integer.
+  //return (x+n) where x is a bigintotr and n is an integer.
   function addInt(x,n) {
     var ans=expand(x,x.length+1);
     addInt_(ans,n);
     return trim(ans,1);
   }
 
-  //return x*y for bigInts x and y. This is faster when y<x.
+  //return x*y for bigintotrs x and y. This is faster when y<x.
   function mult(x,y) {
     var ans=expand(x,x.length+y.length);
     mult_(ans,y);
     return trim(ans,1);
   }
 
-  //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
+  //return (x**y mod n) where x,y,n are bigintotrs and ** is exponentiation.  0**0=1. Faster for odd n.
   function powMod(x,y,n) {
     var ans=expand(x,n.length);  
     powMod_(ans,trim(y,2),trim(n,2),0);  //this should work without the trim, but doesn't
     return trim(ans,1);
   }
 
-  //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
+  //return (x-y) for bigintotrs x and y.  Negative answers will be 2s complement
   function sub(x,y) {
     var ans=expand(x,(x.length>y.length ? x.length+1 : y.length+1)); 
     sub_(ans,y);
     return trim(ans,1);
   }
 
-  //return (x+y) for bigInts x and y.  
+  //return (x+y) for bigintotrs x and y.  
   function add(x,y) {
     var ans=expand(x,(x.length>y.length ? x.length+1 : y.length+1)); 
     add_(ans,y);
     return trim(ans,1);
   }
 
-  //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
+  //return (x**(-1) mod n) for bigintotrs x and n.  If no inverse exists, it returns null
   function inverseMod(x,n) {
     var ans=expand(x,n.length); 
     var s;
@@ -460,7 +460,7 @@
     return s ? trim(ans,1) : null;
   }
 
-  //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
+  //return (x*y mod n) for bigintotrs x,y,n.  For greater speed, let y<x.
   function multMod(x,y,n) {
     var ans=expand(x,n.length);
     multMod_(ans,y,n);
@@ -468,7 +468,7 @@
   }
 
   //generate a k-bit true random prime using Maurer's algorithm,
-  //and put it into ans.  The bigInt ans must be large enough to hold it.
+  //and put it into ans.  The bigintotr ans must be large enough to hold it.
   function randTruePrime_(ans,k) {
     var c,w,m,pm,dd,j,r,B,divisible,z,zz,recSize,recLimit;
 
@@ -541,7 +541,7 @@
 
     for (;;) {
       for (;;) {  //generate z-bit numbers until one falls in the range [0,s_i-1]
-        randBigInt_(s_R,z,0);
+        randbigintotr_(s_R,z,0);
         if (greater(s_i,s_R))
           break;
       }                //now s_R is in the range [0,s_i-1]
@@ -573,7 +573,7 @@
         for (zz=0,w=s_n[j]; w; (w>>=1),zz++);
         zz+=bpe*j;                             //zz=number of bits in s_n, ignoring leading zeros
         for (;;) {  //generate z-bit numbers until one falls in the range [0,s_n-1]
-          randBigInt_(s_a,zz,0);
+          randbigintotr_(s_a,zz,0);
           if (greater(s_n,s_a))
             break;
         }                //now s_a is in the range [0,s_n-1]
@@ -600,22 +600,22 @@
     }
   }
 
-  //Return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
-  function randBigInt(n,s) {
+  //Return an n-bit random bigintotr (n>=1).  If s=1, then the most significant of those n bits is set to 1.
+  function randbigintotr(n,s) {
     var a,b;
-    a=Math.floor((n-1)/bpe)+2; //# array elements to hold the BigInt with a leading 0 element
-    b=int2bigInt(0,0,a);
-    randBigInt_(b,n,s);
+    a=Math.floor((n-1)/bpe)+2; //# array elements to hold the bigintotr with a leading 0 element
+    b=int2bigintotr(0,0,a);
+    randbigintotr_(b,n,s);
     return b;
   }
 
-  //Set b to an n-bit random BigInt.  If s=1, then the most significant of those n bits is set to 1.
+  //Set b to an n-bit random bigintotr.  If s=1, then the most significant of those n bits is set to 1.
   //Array b must be big enough to hold the result. Must have n>=1
-  function randBigInt_(b,n,s) {
+  function randbigintotr_(b,n,s) {
     var i,a;
     for (i=0;i<b.length;i++)
       b[i]=0;
-    a=Math.floor((n-1)/bpe)+1; //# array elements to hold the BigInt
+    a=Math.floor((n-1)/bpe)+1; //# array elements to hold the bigintotr
     for (i=0;i<a;i++) {
       b[i]=randomBitInt(bpe);
     }
@@ -624,7 +624,7 @@
       b[a-1] |= (1<<((n-1)%bpe));
   }
 
-  //Return the greatest common divisor of bigInts x and y (each with same number of elements).
+  //Return the greatest common divisor of bigintotrs x and y (each with same number of elements).
   function GCD(x,y) {
     var xc,yc;
     xc=dup(x);
@@ -633,7 +633,7 @@
     return xc;
   }
 
-  //set x to the greatest common divisor of bigInts x and y (each with same number of elements).
+  //set x to the greatest common divisor of bigintotrs x and y (each with same number of elements).
   //y is destroyed.
   function GCD_(x,y) {
     var i,xp,yp,A,B,C,D,q,sing,qp;
@@ -685,7 +685,7 @@
     }
   }
 
-  //do x=x**(-1) mod n, for bigInts x and n.
+  //do x=x**(-1) mod n, for bigintotrs x and n.
   //If no inverse exists, it sets x to zero and returns 0, else it returns 1.
   //The x array must be at least as large as the n array.
   function inverseMod_(x,n) {
@@ -780,9 +780,9 @@
   }
 
 
-  //Given positive bigInts x and y, change the bigints v, a, and b to positive bigInts such that:
+  //Given positive bigintotrs x and y, change the bigintotrs v, a, and b to positive bigintotrs such that:
   //     v = GCD_(x,y) = a*x-b*y
-  //The bigInts v, a, b, must have exactly as many elements as the larger of x and y.
+  //The bigintotrs v, a, b, must have exactly as many elements as the larger of x and y.
   function eGCD_(x,y,v,a,b) {
     var g=0;
     var k=Math.max(x.length,y.length);
@@ -851,14 +851,14 @@
   }
 
 
-  //is bigInt x negative?
+  //is bigintotr x negative?
   function negative(x) {
     return ((x[x.length-1]>>(bpe-1))&1);
   }
 
 
   //is (x << (shift*bpe)) > y?
-  //x and y are nonnegative bigInts
+  //x and y are nonnegative bigintotrs
   //shift is a nonnegative integer
   function greaterShift(x,y,shift) {
     var i, kx=x.length, ky=y.length;
@@ -896,7 +896,7 @@
     return 0;
   }
 
-  //divide x by y giving quotient q and remainder r.  (q=floor(x/y),  r=x mod y).  All 4 are bigints.
+  //divide x by y giving quotient q and remainder r.  (q=floor(x/y),  r=x mod y).  All 4 are bigintotrs.
   //x must have at least one leading zero element.
   //y must be nonzero.
   //q and r must be arrays that are exactly the same length as x. (Or q can have more).
@@ -962,7 +962,7 @@
     rightShift_(r,a);  //undo the normalization step
   }
 
-  //do carries and borrows so each element of the bigInt x fits in bpe bits.
+  //do carries and borrows so each element of the bigintotr x fits in bpe bits.
   function carry_(x) {
     var i,k,c,b;
     k=x.length;
@@ -980,7 +980,7 @@
     }
   }
 
-  //return x mod n for bigInt x and integer n.
+  //return x mod n for bigintotr x and integer n.
   function modInt(x,n) {
     var i,c=0;
     for (i=x.length-1; i>=0; i--)
@@ -988,11 +988,11 @@
     return c;
   }
 
-  //convert the integer t into a bigInt with at least the given number of bits.
-  //the returned array stores the bigInt in bpe-bit chunks, little endian (buff[0] is least significant word)
+  //convert the integer t into a bigintotr with at least the given number of bits.
+  //the returned array stores the bigintotr in bpe-bit chunks, little endian (buff[0] is least significant word)
   //Pad the array with leading zeros so that it has at least minSize elements.
   //There will always be at least one leading 0 element.
-  function int2bigInt(t,bits,minSize) {   
+  function int2bigintotr(t,bits,minSize) {   
     var i,k, buff;
     k=Math.ceil(bits/bpe)+1;
     k=minSize>k ? minSize : k;
@@ -1001,11 +1001,11 @@
     return buff;
   }
 
-  //return the bigInt given a string representation in a given base.  
+  //return the bigintotr given a string representation in a given base.  
   //Pad the array with leading zeros so that it has at least minSize elements.
   //If base=-1, then it reads in a space-separated list of array elements in decimal.
   //The array will always have at least one leading zero, unless base=-1.
-  function str2bigInt(s,base,minSize) {
+  function str2bigintotr(s,base,minSize) {
     var d, i, j, x, y, kk;
     var k=s.length;
     if (base==-1) { //comma-separated list of array elements in decimal
@@ -1041,7 +1041,7 @@
     }
     b += p*k;
 
-    x=int2bigInt(0,b,0);
+    x=int2bigintotr(0,b,0);
     for (i=0;i<k;i++) {
       d=digitsStr.indexOf(s.substring(i,i+1),0);
       if (base<=36 && d>=36)  //convert lowercase to uppercase if base<=36
@@ -1064,7 +1064,7 @@
     return y;
   }
 
-  //is bigint x equal to integer y?
+  //is bigintotr x equal to integer y?
   //y must have less than bpe bits
   function equalsInt(x,y) {
     var i;
@@ -1076,7 +1076,7 @@
     return 1;
   }
 
-  //are bigints x and y equal?
+  //are bigintotrs x and y equal?
   //this works even if x and y are different lengths and have arbitrarily many leading zeros
   function equals(x,y) {
     var i;
@@ -1096,7 +1096,7 @@
     return 1;
   }
 
-  //is the bigInt x equal to zero?
+  //is the bigintotr x equal to zero?
   function isZero(x) {
     var i;
     for (i=0;i<x.length;i++)
@@ -1105,9 +1105,9 @@
     return 1;
   }
 
-  //convert a bigInt into a string in a given base, from base 2 up to base 95.
+  //convert a bigintotr into a string in a given base, from base 2 up to base 95.
   //Base -1 prints the contents of the array representing the number.
-  function bigInt2str(x,base) {
+  function bigintotr2str(x,base) {
     var i,t,s="";
 
     if (s6.length!=x.length) 
@@ -1131,7 +1131,7 @@
     return s;
   }
 
-  //returns a duplicate of bigInt x
+  //returns a duplicate of bigintotr x
   function dup(x) {
     var i, buff;
     buff=new Array(x.length);
@@ -1139,7 +1139,7 @@
     return buff;
   }
 
-  //do x=y on bigInts x and y.  x must be an array at least as big as y (not counting the leading zeros in y).
+  //do x=y on bigintotrs x and y.  x must be an array at least as big as y (not counting the leading zeros in y).
   function copy_(x,y) {
     var i;
     var k=x.length<y.length ? x.length : y.length;
@@ -1149,7 +1149,7 @@
       x[i]=0;
   }
 
-  //do x=y on bigInt x and integer y.  
+  //do x=y on bigintotr x and integer y.  
   function copyInt_(x,n) {
     var i,c;
     for (c=n,i=0;i<x.length;i++) {
@@ -1158,7 +1158,7 @@
     }
   }
 
-  //do x=x+n where x is a bigInt and n is an integer.
+  //do x=x+n where x is a bigintotr and n is an integer.
   //x must be large enough to hold the result.
   function addInt_(x,n) {
     var i,k,c,b;
@@ -1179,7 +1179,7 @@
     }
   }
 
-  //right shift bigInt x by n bits.
+  //right shift bigintotr x by n bits.
   function rightShift_(x,n) {
     var i;
     var k=Math.floor(n/bpe);
@@ -1196,7 +1196,7 @@
     x[i]>>=n;
   }
 
-  //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement
+  //do x=floor(|x|/2)*sgn(x) for bigintotr x in 2's complement
   function halve_(x) {
     var i;
     for (i=0;i<x.length-1;i++) {
@@ -1205,7 +1205,7 @@
     x[i]=(x[i]>>1) | (x[i] & (radix>>1));  //most significant bit stays the same
   }
 
-  //left shift bigInt x by n bits.
+  //left shift bigintotr x by n bits.
   function leftShift_(x,n) {
     var i;
     var k=Math.floor(n/bpe);
@@ -1224,7 +1224,7 @@
     x[i]=mask & (x[i]<<n);
   }
 
-  //do x=x*n where x is a bigInt and n is an integer.
+  //do x=x*n where x is a bigintotr and n is an integer.
   //x must be large enough to hold the result.
   function multInt_(x,n) {
     var i,k,c,b;
@@ -1245,7 +1245,7 @@
     }
   }
 
-  //do x=floor(x/n) for bigInt x and integer n, and return the remainder
+  //do x=floor(x/n) for bigintotr x and integer n, and return the remainder
   function divInt_(x,n) {
     var i,r=0,s;
     for (i=x.length-1;i>=0;i--) {
@@ -1256,7 +1256,7 @@
     return r;
   }
 
-  //do the linear combination x=a*x+b*y for bigInts x and y, and integers a and b.
+  //do the linear combination x=a*x+b*y for bigintotrs x and y, and integers a and b.
   //x must be large enough to hold the answer.
   function linComb_(x,y,a,b) {
     var i,c,k,kk;
@@ -1274,7 +1274,7 @@
     }
   }
 
-  //do the linear combination x=a*x+b*(y<<(ys*bpe)) for bigInts x and y, and integers a, b and ys.
+  //do the linear combination x=a*x+b*(y<<(ys*bpe)) for bigintotrs x and y, and integers a, b and ys.
   //x must be large enough to hold the answer.
   function linCombShift_(x,y,b,ys) {
     var i,c,k,kk;
@@ -1292,7 +1292,7 @@
     }
   }
 
-  //do x=x+(y<<(ys*bpe)) for bigInts x and y, and integers a,b and ys.
+  //do x=x+(y<<(ys*bpe)) for bigintotrs x and y, and integers a,b and ys.
   //x must be large enough to hold the answer.
   function addShift_(x,y,ys) {
     var i,c,k,kk;
@@ -1310,7 +1310,7 @@
     }
   }
 
-  //do x=x-(y<<(ys*bpe)) for bigInts x and y, and integers a,b and ys.
+  //do x=x-(y<<(ys*bpe)) for bigintotrs x and y, and integers a,b and ys.
   //x must be large enough to hold the answer.
   function subShift_(x,y,ys) {
     var i,c,k,kk;
@@ -1328,7 +1328,7 @@
     }
   }
 
-  //do x=x-y for bigInts x and y.
+  //do x=x-y for bigintotrs x and y.
   //x must be large enough to hold the answer.
   //negative answers will be 2s complement
   function sub_(x,y) {
@@ -1346,7 +1346,7 @@
     }
   }
 
-  //do x=x+y for bigInts x and y.
+  //do x=x+y for bigintotrs x and y.
   //x must be large enough to hold the answer.
   function add_(x,y) {
     var i,c,k,kk;
@@ -1363,7 +1363,7 @@
     }
   }
 
-  //do x=x*y for bigInts x and y.  This is faster when y<x.
+  //do x=x*y for bigintotrs x and y.  This is faster when y<x.
   function mult_(x,y) {
     var i;
     if (ss.length!=2*x.length)
@@ -1375,7 +1375,7 @@
     copy_(x,ss);
   }
 
-  //do x=x mod n for bigInts x and n.
+  //do x=x mod n for bigintotrs x and n.
   function mod_(x,n) {
     if (s4.length!=x.length)
       s4=dup(x);
@@ -1386,7 +1386,7 @@
     divide_(s4,n,s5,x);  //x = remainder of s4 / n
   }
 
-  //do x=x*y mod n for bigInts x,y,n.
+  //do x=x*y mod n for bigintotrs x,y,n.
   //for greater speed, let y<x.
   function multMod_(x,y,n) {
     var i;
@@ -1400,7 +1400,7 @@
     copy_(x,s0);
   }
 
-  //do x=x*x mod n for bigInts x,n.
+  //do x=x*x mod n for bigintotrs x,n.
   function squareMod_(x,n) {
     var i,j,d,c,kx,kn,k;
     for (kx=x.length; kx>0 && !x[kx-1]; kx--);  //ignore leading zeros in x
@@ -1432,7 +1432,7 @@
     return y;
   }
 
-  //do x=x**y mod n, where x,y,n are bigInts and ** is exponentiation.  0**0=1.
+  //do x=x**y mod n, where x,y,n are bigintotrs and ** is exponentiation.  0**0=1.
   //this is faster when n is odd.  x usually needs to have as many elements as n.
   function powMod_(x,y,n) {
     var k1,k2,kn,np;
@@ -1488,7 +1488,7 @@
   }
 
 
-  //do x=x*y*Ri mod n for bigInts x,y,n, 
+  //do x=x*y*Ri mod n for bigintotrs x,y,n, 
   //  where Ri = 2**(-kn*bpe) mod n, and kn is the 
   //  number of elements in the n array, not 
   //  counting leading zeros.  
@@ -1570,7 +1570,7 @@
     return sub(one, two)
   }
 
-  // computes 2^m as a bigInt
+  // computes 2^m as a bigintotr
   function twoToThe(m) {
     var b = Math.floor(m / bpe) + 2
     var t = new Array(b)
@@ -1588,9 +1588,9 @@
     return _num2bin
   }())
 
-  // serialize a bigInt to an ascii string
+  // serialize a bigintotr to an ascii string
   // padded up to pad length
-  function bigInt2bits(bi, pad) {
+  function bigintotr2bits(bi, pad) {
     pad || (pad = 0)
     bi = dup(bi)
     var ba = ''
@@ -1604,9 +1604,9 @@
     return ba
   }
 
-  // converts a byte array to a bigInt
-  function ba2bigInt(data) {
-    var mpi = str2bigInt('0', 10, data.length)
+  // converts a byte array to a bigintotr
+  function ba2bigintotr(data) {
+    var mpi = str2bigintotr('0', 10, data.length)
     data.forEach(function (d, i) {
       if (i) leftShift_(mpi, 8)
       mpi[0] |= d
@@ -1668,14 +1668,14 @@
   }
 
   return {
-      str2bigInt    : str2bigInt
-    , bigInt2str    : bigInt2str
-    , int2bigInt    : int2bigInt
+      str2bigintotr    : str2bigintotr
+    , bigintotr2str    : bigintotr2str
+    , int2bigintotr    : int2bigintotr
     , multMod       : multMod
     , powMod        : powMod
     , inverseMod    : inverseMod
-    , randBigInt    : randBigInt
-    , randBigInt_   : randBigInt_
+    , randbigintotr    : randbigintotr
+    , randbigintotr_   : randbigintotr_
     , equals        : equals
     , equalsInt     : equalsInt
     , sub           : sub
@@ -1698,8 +1698,8 @@
     , divMod        : divMod
     , subMod        : subMod
     , twoToThe      : twoToThe
-    , bigInt2bits   : bigInt2bits
-    , ba2bigInt     : ba2bigInt
+    , bigintotr2bits   : bigintotr2bits
+    , ba2bigintotr     : ba2bigintotr
   }
 
 }))
