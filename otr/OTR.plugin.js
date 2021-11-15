@@ -24,18 +24,18 @@ module.exports = class OTRClass {
      * @param {*} str 
      * @returns The obsfucated string
      */
-    obsfucateString(str) { return this.randhex + str } // was doing a sha1 hash originally but stopped 
+    obsfucateString(str) { return this.randhex + str; }; // was doing a sha1 hash originally but stopped 
 
-    getName() { return "OTR"; }
-    getDescription() { return "This is andy's OTR implementation do not use in life and death situations."; }
-    getVersion() { return "0.0.1"; }
-    getAuthor() { return "andandy12"; }
+    getName() { return "OTR"; };
+    getDescription() { return "This is andy's OTR implementation do not use in life and death situations."; };
+    getVersion() { return "0.0.1"; };
+    getAuthor() { return "andandy12"; };
     /**
      * Updates the color of the current text entry area within the current text channel.
      * @param {String} hue hue 
      */
     updateTextAreaColor(hue) {
-        document.querySelector('[class*="channelTextArea"] > div').style.backgroundColor = "hsla(" + hue + ",54%,25%,1)"
+        document.querySelector('[class*="channelTextArea"] > div').style.backgroundColor = "hsla(" + hue + ",54%,25%,1)";
     }
 
     start() {
@@ -94,7 +94,7 @@ module.exports = class OTRClass {
             console.log("[OTR] Completed JS Links");
 
             window['define'] = this.tempDefine;//Fix window['define'], we break this otherwise monaco will complain and the scripts wont load.
-            console.log("[OTR] window['define'] is restored")
+            console.log("[OTR] window['define'] is restored");
         }
     }
     /**
@@ -179,7 +179,7 @@ module.exports = class OTRClass {
                         BdApi.showToast(`${this.getName()} last message did not send: ${error}`, { type: "error" });
                         break;
                     default:
-                        BdApi.showToast(`${this.getName(), error}`, { type: "error" })
+                        BdApi.showToast(`${this.getName(), error}`, { type: "error" });
                         break;
                 }
 
@@ -215,7 +215,6 @@ module.exports = class OTRClass {
                         }
                     })
                 }
-
                 console.log(`[OTR] OTR object ${message.channel_id} is receiving ${message.content}`);
                 OTR[message.channel_id].receiveMsg(message.content);
             } else {
@@ -277,7 +276,7 @@ module.exports = class OTRClass {
                 if (typeof OTR[a.methodArguments[0]] != "undefined") // if we have a object for the channel we are sending to 
                     OTR[a.methodArguments[0]].sendMsg(a.methodArguments[1].content);
                 else {
-                    console.log(`[OTR] Sending plaintext to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content} `)
+                    console.log(`[OTR] Sending plaintext to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content} `);
                     this.forceSendMessage(a.methodArguments[0], a.methodArguments[1].content);
                 }
             }
@@ -316,7 +315,7 @@ module.exports = class OTRClass {
                     </label>
                 </td>`;
         document.querySelectorAll(`[data-list-item-id*= private-channels]`).forEach((e) => { // for all elements in the current dm list
-            let data = BdApi.getData("OTR", e.getAttribute("data-list-item-id").split("___")[1])
+            let data = BdApi.getData("OTR", e.getAttribute("data-list-item-id").split("___")[1]);
             if (typeof data != "undefined") {  // we check if we have a stored object for that channel
                 // we want to 
                 template += `
@@ -337,11 +336,11 @@ module.exports = class OTRClass {
                 </tr>
                 
                 </table></div>
-                </div>`
+                </div>`;
             }
         });
         if (template.toString().length >= 176)
-            template += "<p style='color:aliceblue'>You must allow the plugin to receive over a channel to see settings.</p>"
+            template += "<p style='color:aliceblue'>You must allow the plugin to receive over a channel to see settings.</p>";
         return template;
     }
     /**
@@ -384,7 +383,7 @@ module.exports = class OTRClass {
      * @param {String} currchannel 
      */
     addOTRSendQueryMsgButton(currchannel) {
-        document.querySelector('[class*=scrollerInner-]').lastElementChild.previousElementSibling.innerHTML += `<button style="margin-left:20px" onclick="OTR[\'${currchannel}\'].sendQueryMsg();this.remove();"><p style="margin:5px">Send Query Message</p></button>`
+        document.querySelector('[class*=scrollerInner-]').lastElementChild.previousElementSibling.innerHTML += `<button style="margin-left:20px" onclick="OTR[\'${currchannel}\'].sendQueryMsg();this.remove();"><p style="margin:5px">Send Query Message</p></button>`;
     }
 
     onSwitch() {
