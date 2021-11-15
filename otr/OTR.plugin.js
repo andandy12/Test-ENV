@@ -408,5 +408,4 @@ module.exports = class OTRClass {
             }
         }
     }
-
 }
