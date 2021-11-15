@@ -1,8 +1,5 @@
 /**
- * @name this.getName()
- * @version this.getVersion()
- * @description this.getDescription()
- * @author this.getAuthor()
+ * @name OTR
  */
 
 // todo: When receiving a ui event be able to modify displayed data and log it to file so we can do it in future
@@ -22,20 +19,28 @@ module.exports = class OTRClass {
 
     currentUser = BdApi.findModuleByProps("dispatch").getCurrentUser();
     randhex = Math.random().toString(16).substr(2);
+    /**
+     * Obsfucates strings so that we can use them in DOM or other locations.
+     * @param {*} str 
+     * @returns The obsfucated string
+     */
     obsfucateString(str) { return this.randhex + str } // was doing a sha1 hash originally but stopped 
 
     getName() { return "OTR"; }
     getDescription() { return "This is andy's OTR implementation do not use in life and death situations."; }
     getVersion() { return "0.0.1"; }
     getAuthor() { return "andandy12"; }
-
-    updateTextAreaColor(hex) {
-        document.querySelector('[class*="channelTextArea"] > div').style.backgroundColor = "hsla(" + hex + ",54%,25%,1)"
+    /**
+     * Updates the color of the current text entry area within the current text channel.
+     * @param {String} hue hue 
+     */
+    updateTextAreaColor(hue) {
+        document.querySelector('[class*="channelTextArea"] > div').style.backgroundColor = "hsla(" + hue + ",54%,25%,1)"
     }
 
     start() {
         BdApi.showToast("OTR is starting");
-        console.log("[OTR] Starting");
+        console.log("\n[OTR] Starting");
 
         this.patchReceiveEvent();
         this.patchSendEvent();
@@ -43,26 +48,29 @@ module.exports = class OTRClass {
         this.addJSDependenciesToDOM();
 
         this.testForScripts();
-        // execution will go to postLoadedScripts when this is done 
     }
-
+    /**
+     * Replaces window['define'] and adds libraries to DOM.
+     */
     addJSDependenciesToDOM() {
         console.log("[OTR] Ruining window['define]' (will fix when scripts are all loaded)");
         this.tempDefine = window['define'];
-        window['define'] = undefined
+        window['define'] = undefined;
 
         if (typeof Salsa20 == "undefined")
             BdApi.linkJS(this.obsfucateString("salsa20js"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/salsa20.js");
         if (typeof bigintotr == "undefined")
             BdApi.linkJS(this.obsfucateString("bigintjs"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/bigintotr.js");
         if (typeof EventEmitter == "undefined")
-            BdApi.linkJS(this.obsfucateString("eventemitterjs"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/eventemitter.js"); // EventEmitter is in standard node... Meaning I dont really know how to test for it here.
+            BdApi.linkJS(this.obsfucateString("eventemitterjs"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/eventemitter.js");
         if (typeof CryptoJS == "undefined")
             BdApi.linkJS(this.obsfucateString("cryptojs"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/crypto.js");
-        if (typeof DSA == "undefined") // you can not use OTR here as the class is called OTR
+        if (typeof OTR == "undefined")
             BdApi.linkJS(this.obsfucateString("otrjs"), "https://cdn.jsdelivr.net/gh/andandy12/Test-ENV/otr/dep/otr.js");
     }
-
+    /**
+     * Removes required libraries from DOM.
+     */
     removeJSDependenciesFromDOM() {
         if (typeof Salsa20 != "undefined")
             BdApi.unlinkJS(this.obsfucateString("salsa20js"));
@@ -72,24 +80,27 @@ module.exports = class OTRClass {
             BdApi.unlinkJS(this.obsfucateString("eventemitterjs"));
         if (typeof CryptoJS != "undefined")
             BdApi.unlinkJS(this.obsfucateString("cryptojs"));
-        if (typeof DSA != "undefined") // you can not use OTR here as the class is called OTR
+        if (typeof OTR != "undefined")
             BdApi.unlinkJS(this.obsfucateString("otrjs"));
     }
-
+    /**
+     * Checks if all the required libraries are loaded then repairs window['define'].
+     */
     testForScripts() {
-        if (typeof Salsa20 == "undefined" || typeof bigintotr == "undefined" || typeof EventEmitter == "undefined" || typeof CryptoJS == "undefined" || typeof DSA == "undefined")
-            return setTimeout(() => { this.testForScripts() }, 250);
+        if (typeof Salsa20 == "undefined" || typeof bigintotr == "undefined" || typeof EventEmitter == "undefined" || typeof CryptoJS == "undefined" || typeof OTR == "undefined")
+            setTimeout(() => { this.testForScripts() }, 250);
         else {
             this.removeJSDependenciesFromDOM()
             console.log("[OTR] Completed JS Links");
 
             window['define'] = this.tempDefine;//Fix window['define'], we break this otherwise monaco will complain and the scripts wont load.
             console.log("[OTR] window['define'] is restored")
-
-            return;
         }
     }
-
+    /**
+     * Very basic function that directs event to handlers.
+     * @param {Object} evt The event that either dirtyDispatch or dispatch receives.
+     */
     processDispatchEvent(evt) {
         switch (evt.type) {
             case "MESSAGE_CREATE":
@@ -99,13 +110,21 @@ module.exports = class OTRClass {
                 break;
         }
     }
-
-
-    updateData(plugin, key, opperation) {
-        let temp1 = opperation(BdApi.loadData(plugin, key));
+    /**
+     * Update a key for a plugin after performing a operation on said data.
+     * @param {String} plugin The plugin name where the object is stored
+     * @param {String} key The key of the object that is saved
+     * @param {*} operation Ex. (data) => { data.REQUIRE_ENCRYPTION = false; return data })
+     */
+    updateData(plugin, key, operation) {
+        let temp1 = operation(BdApi.loadData(plugin, key));
         BdApi.saveData(plugin, key, temp1);
     }
 
+    /**
+     * When passed a channel we have store we create and setup a OTR object for it.
+     * @param {String} channelid A discord channel id.
+     */
     pushLocalOTRToMem(channelid) {
         let data = BdApi.loadData(this.getName(), channelid);
         if (data && typeof OTR[channelid == "undefined"]) {// if we have data locally and its not in mem
@@ -117,12 +136,11 @@ module.exports = class OTRClass {
             OTR[channelid].SEND_WHITESPACE_TAG = data.SEND_WHITESPACE_TAG;
             OTR[channelid].WHITESPACE_START_AKE = data.WHITESPACE_START_AKE;
             OTR[channelid].ERROR_START_AKE = data.ERROR_START_AKE;
-            OTR[channelid].send_interval = 10000;
+            OTR[channelid].send_interval = 333;
             OTR[channelid].fragment_size = 1900;
             OTR[channelid].CHANNEL = channelid;
 
-
-            OTR[channelid].on('io', (msg) => { // send fired
+            OTR[channelid].on('io', (msg) => { // this fires when we are sending
                 if (!msg.includes("OTR")) {// if msg isnt encrypted
                     this.updateTextAreaColor(0);
                     if (!OTR[channelid].REQUIRE_ENCRYPTION) {
@@ -139,41 +157,41 @@ module.exports = class OTRClass {
                     this.updateTextAreaColor(133);
                     this.forceSendMessage(OTR[channelid].CHANNEL, msg);
                 }
-            })
+            });
 
-
-            OTR[channelid].on('error', (error) => { // i know that OTR.ERROR_START_AKE exists but was giving bugs so here is my own bad implementation
-
-                if (error.includes("intended for a different session")) {
-                    if (OTR[channelid].msgstate != 0 && OTR[channelid].authstate == 0) { // to prevent constant bounce back and forth during invalid session
-                        // we need to send a message that would result in the other client throwing same error
-                        OTR[channelid].sendMsg("?OTR:AAMDG3n0Af6WUEsAAAAAAgAAAAIAAADAog7Enk3/p17aDjQVsqq/w1lRDvkIz5U5k62UdMG/VVrifYk9AgmkciYnST+Kjd2/WGSKlj/MEb0UaNton8h8j7dSRdZA845zGiw8Hj2WX1G0hoZBp19c1OcYK/pGjfYcN0TEVAbrWbs6qCTEn+8wUvs3qdwBejlBR0iVrhwsX8QF8Yo+76S6YbSCJPd5QT5BMwjo48NCQ9YPmOlyz9eoebMYfplH7HqCVUHJBiGNxpePEE8t+uyG/KVAUYgfS1WAAAAAAAAAAAEAAAFeR9DokhefIfvqg9YHHdlx6KBjtpcUPs4PS9CjxeQvNNezFEC+2hhDAQhr6INUUnvM+OZOj+nmG+ai36nSDd2/z3p895CWaPVkCyuSHG8OeZAEMBwaNrjMJv6RoZ5VbuZ/8MOuG8fdNq3j7M2XgNWrxRY8ODdDgDZc+SXfygaQcgwdYLt0tMc5h6/NPnu45pm9yL2LGSMpn6fIz115T5iwIwSs40zJT+dDzeZOdrBrVQD8kt8HjgqlQWO+7WqJ6y/e0pwc9IywrN86rwjZdTvoNCpqv4PoZzV34v4KU8O+hlni9mPdg66QMdDyFbbrCLxvPZJKADRzuaDTQauxXAPbGKu0TApl77xR4Gzhr+Jp7TYoorXkQ1E2FO0ACdgIjihHWs6MgWSVeivf9kg6fkbShVE0PPylVunHxFHoTSfM9NQnj0W1/niSMk6bC1HLGCf3gBk4xsZxecAFzm6sqZttmKfkHVymz27+76qiW3lCVwBi1QAAAAA=.");
-                        // we need the other client to be ready to do a ake
-                        OTR[channelid].their_instance_tag = "\u0000\u0000\u0000\u0000";
-                        OTR[channelid].their_keyid = 0; OTR[channelid].their_old_y = null;
-                        OTR[channelid].their_priv_pk = null; OTR[channelid].their_y = null;
-                        OTR[channelid].msgstate = 0; OTR[channelid].authstate = 0;
-                        return BdApi.showToast(`${this.getName(), error}`, { type: "error" });
-                    } else {
-                        return OTR[channelid].sendQueryMsg();
-                    }
+            OTR[channelid].on('error', (error) => { // I know that OTR.ERROR_START_AKE exists but was giving bugs so here is my own bad implementation
+                switch (error) {
+                    case 'Received a message intended for a different session.':
+                        if (OTR[channelid].msgstate != 0 && OTR[channelid].authstate == 0) { // to prevent constant bounce back and forth during invalid session
+                            // we need to send a message that would result in the other client throwing same error
+                            OTR[channelid].sendMsg("?OTR:AAMDG3n0Af6WUEsAAAAAAgAAAAIAAADAog7Enk3/p17aDjQVsqq/w1lRDvkIz5U5k62UdMG/VVrifYk9AgmkciYnST+Kjd2/WGSKlj/MEb0UaNton8h8j7dSRdZA845zGiw8Hj2WX1G0hoZBp19c1OcYK/pGjfYcN0TEVAbrWbs6qCTEn+8wUvs3qdwBejlBR0iVrhwsX8QF8Yo+76S6YbSCJPd5QT5BMwjo48NCQ9YPmOlyz9eoebMYfplH7HqCVUHJBiGNxpePEE8t+uyG/KVAUYgfS1WAAAAAAAAAAAEAAAFeR9DokhefIfvqg9YHHdlx6KBjtpcUPs4PS9CjxeQvNNezFEC+2hhDAQhr6INUUnvM+OZOj+nmG+ai36nSDd2/z3p895CWaPVkCyuSHG8OeZAEMBwaNrjMJv6RoZ5VbuZ/8MOuG8fdNq3j7M2XgNWrxRY8ODdDgDZc+SXfygaQcgwdYLt0tMc5h6/NPnu45pm9yL2LGSMpn6fIz115T5iwIwSs40zJT+dDzeZOdrBrVQD8kt8HjgqlQWO+7WqJ6y/e0pwc9IywrN86rwjZdTvoNCpqv4PoZzV34v4KU8O+hlni9mPdg66QMdDyFbbrCLxvPZJKADRzuaDTQauxXAPbGKu0TApl77xR4Gzhr+Jp7TYoorXkQ1E2FO0ACdgIjihHWs6MgWSVeivf9kg6fkbShVE0PPylVunHxFHoTSfM9NQnj0W1/niSMk6bC1HLGCf3gBk4xsZxecAFzm6sqZttmKfkHVymz27+76qiW3lCVwBi1QAAAAA=.");
+                            // we need the other client to be ready to do a ake
+                            OTR[channelid].their_instance_tag = "\u0000\u0000\u0000\u0000";
+                            OTR[channelid].their_keyid = 0; OTR[channelid].their_old_y = null;
+                            OTR[channelid].their_priv_pk = null; OTR[channelid].their_y = null;
+                            OTR[channelid].msgstate = 0; OTR[channelid].authstate = 0;
+                            BdApi.showToast(`${this.getName(), error}`, { type: "error" });
+                        } else {
+                            OTR[channelid].sendQueryMsg();
+                        }
+                        break;
+                    case "Not ready to encrypt.":
+                        BdApi.showToast(`${this.getName()} last message did not send: ${error}`, { type: "error" });
+                        break;
+                    default:
+                        BdApi.showToast(`${this.getName(), error}`, { type: "error" })
+                        break;
                 }
-                if (error.includes("Received an unencrypted message")) {
-                    return BdApi.showToast(`${this.getName(), error}`, { type: "error" })
-                }
-                if (error.includes("Not ready to encrypt")) {
-                    return BdApi.showToast(`${this.getName()} last message did not send: ${error}`, { type: "error" });
-                }
-                BdApi.showToast(`${this.getName(), error}`, { type: "error" });
-            })
 
-
+            });
         }
     }
-
+    /**
+     * When receiving a message we either modify or leave it alone.
+     * @param {Object} message A discord message object
+     */
     processMESSAGE_CREATE(message) {
-        console.log("message", message);
-
+        //console.log("[OTR] processing message", message);
 
         if (message.author.id != this.currentUser.id) {
 
@@ -183,30 +201,33 @@ module.exports = class OTRClass {
                         if (OTR[message.channel_id].authstate != 0 || OTR[message.channel_id].msgstate != 1 || msg.includes("?OTRv")) { // if auth hasnt completed or if msg is querymsg
                             // channel isnt secure
                             if (msg.includes("OTR:")) // if msg potentially encrypted
-                                console.log("Received potentially encrypted message over insecure channel", msg);
+                                console.log("[OTR] Received potentially encrypted message over insecure channel", msg);
                             else
-                                console.log("Received plaintext msg on insecure channel", msg);
+                                console.log("[OTR] Received plaintext msg on insecure channel", msg);
                         } else {
                             // channel is secure?
                             if (msg.includes("OTR:")) { // msg is potentially encrypted
-                                console.log("Received encrypted msg to over secure channel, replace msg if we come across it", msg);
+                                console.log("[OTR] Received encrypted msg to over secure channel, replace msg if we come across it", msg);
                                 message.content = msg;
                                 //make to sure to replace original content with msg when we come across it
                             } else
-                                console.log("Recieved Unencrypted msg under secure channel", msg);
+                                console.log("[OTR] Recieved Unencrypted msg under secure channel", msg);
                         }
                     })
                 }
 
                 console.log(`[OTR] OTR object ${message.channel_id} is receiving ${message.content}`);
                 OTR[message.channel_id].receiveMsg(message.content);
-            } else{
+            } else {
                 this.pushLocalOTRToMem(message.channel_id);
             }
         }
     }
 
-
+    /**
+     * Create then write a OTR object to memory.
+     * @param {String} channelid The channel to store.
+     */
     storeLocalOTR(channelid) {
         if (BdApi.getData(this.getName(), channelid) == undefined) {
             BdApi.saveData(this.getName(), channelid, {
@@ -216,7 +237,9 @@ module.exports = class OTRClass {
             });
         }
     }
-
+    /**
+     * Patches dirtyDispatch._orderedActionHandlers.Message_create[4] so we can intercept messages sent/received.
+     */
     patchReceiveEvent() {
         // patching dispatch.events.MESSAGE_CREATE does not call the functions
         // but patching dirtyDispatch._orderedActionHandlers.MESSAGE_CREATE works on some functions
@@ -244,7 +267,9 @@ module.exports = class OTRClass {
                 });
         }
     }
-
+    /**
+     * Patches sendMessage so we can intercept messages sent.
+     */
     patchSendEvent() {
         console.log("[OTR] Patching sendMessage()");
         this.cancelSendPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("sendMessage"), "sendMessage", {
@@ -255,11 +280,13 @@ module.exports = class OTRClass {
                     console.log(`[OTR] Sending plaintext to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content} `)
                     this.forceSendMessage(a.methodArguments[0], a.methodArguments[1].content);
                 }
-                //console.log(`[OTR] Sending to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content}`)
             }
         });
     }
 
+    /**
+     * Calls the function that sendMessage() originally calls with some predefined args.
+     */
     forceSendMessage(channel, message) {
         BdApi.findModuleByProps("sendMessage")._sendMessage(channel, { "content": message, "tts": false, "invalidEmojis": [], "validNonShortcutEmojis": [] }, {});
     }
@@ -270,7 +297,8 @@ module.exports = class OTRClass {
         console.log("[OTR] Unpatching dirtyDispatch._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
         this.cancelReceivePatch();
 
-        BdApi.showToast("OTR has stopped");
+        console.log("[OTR] Stopped");
+        BdApi.showToast("[OTR] Stopped");
     }
 
     getSettingsPanel() {// I fully understand that this is so bad but it works for now so...
@@ -316,7 +344,10 @@ module.exports = class OTRClass {
             template += "<p style='color:aliceblue'>You must allow the plugin to receive over a channel to see settings.</p>"
         return template;
     }
-    // i really dont like doing dom manipulation this way but it works
+    /**
+     * Appends a button to the last message sent in a channel.
+     * @param {String} currchannel 
+     */
     addOTRDeletionButton(currchannel) {
         document.querySelector('[class*=scrollerInner-]').lastElementChild.previousElementSibling.innerHTML += `<button style="margin-left:20px" onclick="BdApi.showConfirmationModal(\'${this.getName()}\'+ ' plugin','Do you want to permenantly delete the local OTR for this channel? (This will permenantly stop it from working)',{
             'cancelText':'no',
@@ -330,6 +361,10 @@ module.exports = class OTRClass {
             }})"><p style="margin:5px">Delete OTR</p></button>`
     }
 
+    /**
+     * Appends a button to the last message sent in a channel.
+     * @param {String} currchannel 
+     */
     addOTRAllowButton(currchannel) {
         document.querySelector('[class*=scrollerInner-]').lastElementChild.previousElementSibling.innerHTML += `<button style="margin-left:20px" onclick="BdApi.showConfirmationModal(\'${this.getName()}\'+ ' plugin','Do you want to turn on OTR in the current channel?',{
             'cancelText':'no',
@@ -344,6 +379,10 @@ module.exports = class OTRClass {
             }})"><p style="margin:5px">Create OTR</p></button>`
     }
 
+    /**
+     * Appends a button to the last message sent in a channel.
+     * @param {String} currchannel 
+     */
     addOTRSendQueryMsgButton(currchannel) {
         document.querySelector('[class*=scrollerInner-]').lastElementChild.previousElementSibling.innerHTML += `<button style="margin-left:20px" onclick="OTR[\'${currchannel}\'].sendQueryMsg();this.remove();"><p style="margin:5px">Send Query Message</p></button>`
     }
@@ -360,7 +399,7 @@ module.exports = class OTRClass {
                     console.log("[OTR] Found stored object for current channel");
                     this.addOTRDeletionButton(currchannel);
                     if (typeof OTR[currchannel] != "undefined") {// if we have the OTR object stored in mem we want to allow the user to
-                        if(OTR[currchannel].msgstate == 0 || OTR[currchannel].authstate != 0) // if we havent authed or completed it
+                        if (OTR[currchannel].msgstate == 0 || OTR[currchannel].authstate != 0) // if we havent authed or completed it
                             this.addOTRSendQueryMsgButton(currchannel);
                     } else {
                         console.log("[OTR] pushing local object to mem");
