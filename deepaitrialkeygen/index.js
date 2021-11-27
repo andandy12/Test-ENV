@@ -3,7 +3,7 @@ const request = require('request');
 const fs = require('fs');
 function imageapi(model, imageurl) {
     userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0"
-    blackBox = (function () { // the was exposed to the end user through one of their linked files... 
+    blackBox = (function () { // this function was exposed to the end user through one of their linked files... 
         for (var p = [], n = 0; 64 > n;)
             p[n] = 0 | (4294967296 * Math.sin(++n % Math.PI));
         return function (t) {
