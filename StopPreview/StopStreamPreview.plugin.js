@@ -15,14 +15,12 @@ module.exports = class OTRClass {
         this.makeChunkRequest();
     }
     /**
-     * Patches sendMessage so we can intercept messages sent.
+     * Patches makeChunkRequest so we can force previews to be malformed.
      */
      makeChunkRequest() {
         console.log("[Stop Preview] Patching makeChunkRequest()");
         this.cancelMakeChunkRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
             once: false, before: (e) => {
-                //console.log(e.methodArguments);
-                //console.log(e.methodArguments[0].includes("preview") && e.methodArguments[2].method == "POST");
                 if (e.methodArguments[0].includes("preview") && e.methodArguments[2].method == "POST") {
                     e.methodArguments[2].method = "GET"; // force the post to be a get as a failsafe
                     e.methodArguments[1].thumbnail == "";// change the thumbnail to be an empty image
@@ -30,7 +28,6 @@ module.exports = class OTRClass {
             }
         })
     }
-
 
     stop() {
         console.log("[Stop Preview] Unpatching makeChunkRequest()");
