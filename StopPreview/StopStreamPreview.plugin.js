@@ -21,7 +21,7 @@ module.exports = class OTRClass {
         console.log("[Stop Preview] Patching makeChunkRequest()");
         this.cancelMakeChunkRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
             once: false, 
-            /*before: (e) => {
+            /*before: (e) => { // this one fails but we waste bandwidth as it will retry every so often
                 if (e.methodArguments[0].includes("preview") && e.methodArguments[2].method == "POST") {
                     e.methodArguments[2].method = "GET"; // force the post to be a get as a failsafe
                     return e.methodArguments[1].thumbnail == "";// change the thumbnail to be an empty image
