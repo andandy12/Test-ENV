@@ -5,7 +5,7 @@ module.exports = class OTRClass {
     cancelMakeChunkRequestPatch = () => { };
     getName() { return "Stop Preview"; };
     getDescription() { return "This will force all preview post requests to be malformed."; };
-    getVersion() { return "0.0.1"; };
+    getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -15,19 +15,26 @@ module.exports = class OTRClass {
         this.makeChunkRequest();
     }
     /**
-     * Patches makeChunkRequest so we can force previews to be malformed.
+     * Patches makeChunkRequest so we can stop preview post request from happening
      */
-     makeChunkRequest() {
+    makeChunkRequest() {
         console.log("[Stop Preview] Patching makeChunkRequest()");
         this.cancelMakeChunkRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
-            once: false, before: (e) => {
+            once: false, 
+            /*before: (e) => {
                 if (e.methodArguments[0].includes("preview") && e.methodArguments[2].method == "POST") {
                     e.methodArguments[2].method = "GET"; // force the post to be a get as a failsafe
-                    e.methodArguments[1].thumbnail == "";// change the thumbnail to be an empty image
+                    return e.methodArguments[1].thumbnail == "";// change the thumbnail to be an empty image
+                }
+            }*/
+            instead: (e) => {//if its a preview post req we do nothing
+                if (!e.methodArguments[0].includes("preview") && !e.methodArguments[2].method == "POST") {
+                    e.callOriginalMethod();
                 }
             }
         })
     }
+
 
     stop() {
         console.log("[Stop Preview] Unpatching makeChunkRequest()");
