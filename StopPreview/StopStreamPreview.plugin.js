@@ -2,7 +2,7 @@
  * @name StopPreview
  */
 module.exports = class OTRClass {
-    cancelMakeChunkRequestPatch = () => { };
+    cancelMakeChunkedRequestPatch = () => { };
     getName() { return "Stop Preview"; };
     getDescription() { return "This will force all preview post requests to be malformed."; };
     getVersion() { return "0.0.2"; };
@@ -12,13 +12,13 @@ module.exports = class OTRClass {
         BdApi.showToast("Stop Preview is starting");
         console.log("\n[Stop Preview] Starting");
 
-        this.makeChunkRequest();
+        this.makeChunkedRequest();
     }
     /**
      * Patches makeChunkRequest so we can stop preview post request from happening
      */
-    makeChunkRequest() {
-        console.log("[Stop Preview] Patching makeChunkRequest()");
+    makeChunkedRequest() {
+        console.log("[Stop Preview] Patching makeChunkedRequest()");
         this.cancelMakeChunkRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
             once: false, 
             /*before: (e) => { // this one fails but we waste bandwidth as it will retry every so often
@@ -37,8 +37,8 @@ module.exports = class OTRClass {
 
 
     stop() {
-        console.log("[Stop Preview] Unpatching makeChunkRequest()");
-        this.cancelMakeChunkRequestPatch();
+        console.log("[Stop Preview] Unpatching makeChunkedRequest()");
+        this.cancelMakeChunkedRequestPatch();
 
         console.log("[Stop Preview] Stopped");
         BdApi.showToast("[Stop Preview] Stopped");
