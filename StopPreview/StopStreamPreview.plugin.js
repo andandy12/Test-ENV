@@ -4,7 +4,7 @@
 module.exports = class OTRClass {
     cancelMakeChunkedRequestPatch = () => { };
     getName() { return "Stop Preview"; };
-    getDescription() { return "This will force all preview post requests to be malformed."; };
+    getDescription() { return "This will force all preview post requests to not happen."; };
     getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
 
