@@ -1,7 +1,7 @@
 /**
  * @name StopPreview
  */
-module.exports = class OTRClass {
+ module.exports = class OTRClass {
     cancelMakeChunkedRequestPatch = () => { };
     getName() { return "Stop Preview"; };
     getDescription() { return "This will force all preview post requests to not happen."; };
@@ -12,14 +12,14 @@ module.exports = class OTRClass {
         BdApi.showToast("Stop Preview is starting");
         console.log("\n[Stop Preview] Starting");
 
-        this.makeChunkedRequest();
+        this.patchmakeChunkedRequest();
     }
     /**
      * Patches makeChunkRequest so we can stop preview post request from happening
      */
-    makeChunkedRequest() {
+    patchmakeChunkedRequest() {
         console.log("[Stop Preview] Patching makeChunkedRequest()");
-        this.cancelMakeChunkRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
+        this.cancelMakeChunkedRequestPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", {
             once: false, 
             /*before: (e) => { // this one fails but we waste bandwidth as it will retry every so often
                 if (e.methodArguments[0].includes("preview") && e.methodArguments[2].method == "POST") {
