@@ -33,7 +33,7 @@
         
         //Pretty self explainatory... this took long really long to find, but its worth as I didn't want to mod the websocket directly
         this.cancelFakeDeafen = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("lobbyConnect").prototype, "voiceStateUpdate", {
-            instead: (e) => {
+            instead: (e) => { // this really should of been done with an after...
                 e.callOriginalMethod();
                 if(e.methodArguments[2] == true && e.methodArguments[3] != true) { // if muting and not false
                     BdApi.showConfirmationModal(`plugin`, "Do you want to do a fake mute?", {
