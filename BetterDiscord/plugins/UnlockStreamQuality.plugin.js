@@ -29,13 +29,31 @@
         BdApi.findModuleByProps("AppliedGuildBoostsRequiredForBoostedGuildTier").BoostedGuildFeatures = temp;
         
         // lets you talk in vcs before 10 minutes has big potential to break in future
-        BdApi.findModuleByProps("AppliedGuildBoostsRequiredForBoostedGuildTier").VerificationCriteria = {ACCOUNT_AGE: 5, MEMBER_AGE: 0};
+        BdApi.findModuleByProps("AppliedGuildBoostsRequiredForBoostedGuildTier").VerificationCriteria = {ACCOUNT_AGE: 0, MEMBER_AGE: 0};
         
         //Pretty self explainatory... this took long really long to find, but its worth as I didn't want to mod the websocket directly
         this.cancelFakeDeafen = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("lobbyConnect").prototype, "voiceStateUpdate", {
             instead: (e) => {
                 e.callOriginalMethod();
-                if(e.methodArguments[3] == true) {
+                if(e.methodArguments[2] == true && e.methodArguments[3] != true) { // if muting and not false
+                    BdApi.showConfirmationModal(`plugin`, "Do you want to do a fake mute?", {
+                        cancelText: "No",
+                        confirmText: "Yes",
+                        onConfirm: () => { 
+                            BdApi.findModuleByProps("toggleSelfDeaf").toggleSelfMute();
+                            setTimeout(() => {
+                                e.thisObject.send(4,{
+                                    guild_id: e.methodArguments[0],
+                                    channel_id: e.methodArguments[1],
+                                    self_mute: true,
+                                    self_deaf: false,
+                                    self_video: e.methodArguments[4]
+                                })
+                            }, 250);
+                        }
+                    });
+                }
+                else if(e.methodArguments[3] == true) {
                     BdApi.showConfirmationModal(`plugin`, "Do you want to do a fake deafen?", {
                         cancelText: "No",
                         confirmText: "Yes",
@@ -55,11 +73,46 @@
                 }
             }
         });
+
+        console.log("[Stop My Preview] Patching getGuildPermissions()");
+        this.cancelMoreSettings = BdApi.monkeyPatch(BdApi.findModuleByProps("getGuildPermissions").__proto__,"getGuildPermissionProps",{
+            instead: (e)=>{
+                return {
+                    "canManageGuild": true,
+                    "canManageChannels": true,
+                    "canManageRoles": true,
+                    "canManageBans": true,
+                    "canManageNicknames": true,
+                    "canManageEmojisAndStickers": true,
+                    "canViewAuditLog": true,
+                    "canManageWebhooks": true,
+                    "canViewGuildAnalytics": true,
+                    "isGuildAdmin": true,
+                    "isOwnerWithRequiredMfaLevel": true,
+                    "guild": e.methodArguments[0]
+                        
+                };
+            }
+        })
+        
+        console.log("[Stop My Preview] Patching canAccessGuildSettings()");
+        this.cancelSettings = BdApi.monkeyPatch(BdApi.findModuleByProps("canAccessGuildSettings"),"canAccessGuildSettings",{
+            instead: (e)=>{
+                return true;
+            }
+        })
     }
 
     stop() {
+        console.log("[Stop My Preview] Unpatching getGuildPermissions()");
+        this.cancelMoreSettings();
+
+        console.log("[Stop My Preview] Unpatching canAccessGuildSettings()");
+        this.cancelSettings();
+
         BdApi.findModuleByProps("ApplicationStreamPresets").ApplicationStreamSettingRequirements = this.originalRequirements;
         this.cancelFakeDeafen();
+
         BdApi.findModuleByProps("ApplicationStreamPresets").VerificationCriteria = {ACCOUNT_AGE: 5, MEMBER_AGE: 10}
         BdApi.findModuleByProps("AppliedGuildBoostsRequiredForBoostedGuildTier").BoostedGuildFeatures = this.originalBoostedGuildFeatures;
         console.log("[Stream Settings Unlocked] Stopped");
