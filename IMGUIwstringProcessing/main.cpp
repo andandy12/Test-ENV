@@ -42,57 +42,57 @@ io.Fonts->AddFontFromFileTTF("C:\\Users\\andy\\Downloads\\ARIALUNI.TTF", 18.0f, 
     //const int end[] =  { 0x0FFFF, 0x1FFFF, 0x2FFFF, 0x3FFFF, 0x4FFFF, 0x5FFFF, 0x6FFFF, 0x7FFFF, 0x8FFFF, 0x9FFFF, 0xAFFFF, 0xBFFFF, 0xCFFFF, 0xDFFFF, 0xEFFFF, 0xFFFFF,0x1f, 0x7e, 0x7f, 0x9f, 0xff, 0x17f, 0x24f, 0x2af, 0x2ff, 0x36f, 0x3ff, 0x4ff, 0x52f, 0x58f, 0x5ff, 0x6ff, 0x74f, 0x77f, 0x7bf, 0x7ff, 0x83f, 0x85f, 0x8ff, 0x97f, 0x9ff, 0xa7f, 0xaff, 0xb7f, 0xbff, 0xc7f, 0xcff, 0xd7f, 0xdff, 0xe7f, 0xeff, 0xfff, 0x109f, 0x10ff, 0x115f, 0x11a7, 0x11ff, 0x137f, 0x139f, 0x13ff, 0x167f, 0x169f, 0x16ff, 0x171f, 0x173f, 0x175f, 0x177f, 0x17ff, 0x18af, 0x18ff, 0x194f, 0x197f, 0x19df, 0x19ff, 0x1a1f, 0x1aaf, 0x1aff, 0x1b7f, 0x1bbf, 0x1bff, 0x1c4f, 0x1c7f, 0x1ccf, 0x1cff, 0x1d7f, 0x1dbf, 0x1dff, 0x1eff, 0x1fff, 0x206f, 0x209f, 0x20cf, 0x20ff, 0x214f, 0x218f, 0x21ff, 0x22ff, 0x23ff, 0x243f, 0x245f, 0x24ff, 0x257f, 0x259f, 0x25ff, 0x267f, 0x27bf, 0x27ef, 0x27ff, 0x28ff, 0x297f, 0x29ff, 0x2aff, 0x2bff, 0x2c5f, 0x2c7f, 0x2cff, 0x2d2f, 0x2d7f, 0x2ddf, 0x2dff, 0x2e7f, 0x2eff, 0x2fdf, 0x2fff, 0x303f, 0x309f, 0x30ff, 0x312f, 0x318f, 0x319f, 0x31bf, 0x31ef, 0x31ff, 0x32ff, 0x33ff, 0x4dbf, 0x4dff, 0x9fff, 0xa3ff, 0xa4af, 0xa4ff, 0xa63f, 0xa69f, 0xa6ff, 0xa71f, 0xa7ff, 0xa82f, 0xa83f, 0xa87f, 0xa8df, 0xa8ff, 0xa92f, 0xa95f, 0xa97f, 0xa9df, 0xa9ff, 0xaa5f, 0xaa7f, 0xaadf, 0xaaff, 0xab2f, 0xab6f, 0xabbf, 0xabf9, 0xd7af, 0xd7ff, 0xf8ff, 0xfaff, 0xfb4f, 0xfb06, 0xfb17, 0xfb4f, 0xfdff, 0xfe0f, 0xfe1f, 0xfe2f, 0xfe4f, 0xfe6f, 0xfeff, 0xfeff, 0xffef, 0xff5e, 0xff9f, 0xffdc, 0xffff, 0x1007f, 0x100ff, 0x1013f, 0x1018f, 0x101cf, 0x101ff, 0x1029f, 0x102df, 0x102ff, 0x1032f, 0x1034f, 0x1037f, 0x1039f, 0x103df, 0x1044f, 0x1047f, 0x104af, 0x1052f, 0x1056f, 0x1077f, 0x1083f, 0x1085f, 0x1087f, 0x108af, 0x108ff, 0x1091f, 0x1093f, 0x1099f, 0x109ff, 0x10a5f, 0x10a7f, 0x10a9f, 0x10aff, 0x10b3f, 0x10b5f, 0x10b7f, 0x10baf, 0x10c4f, 0x10cff, 0x10e7f, 0x1107f, 0x110cf, 0x110ff, 0x1114f, 0x1117f, 0x111df, 0x111ff, 0x1124f, 0x112af, 0x112ff, 0x1137f, 0x114df, 0x115ff, 0x1165f, 0x116cf, 0x1173f, 0x118ff, 0x11aff, 0x123ff, 0x1247f, 0x1254f, 0x1342f, 0x1467f, 0x16a3f, 0x16a6f, 0x16aff, 0x16b8f, 0x16f9f, 0x1b0ff, 0x1bc9f, 0x1bcaf, 0x1d0ff, 0x1d1ff, 0x1d24f, 0x1d35f, 0x1d371, 0x1d7ff, 0x1daaf, 0x1e8df, 0x1eeff, 0x1f02f, 0x1f09f, 0x1f0ff, 0x1f1ff, 0x1f2ff, 0x1f5ff, 0x1f64f, 0x1f67f, 0x1f6ff, 0x1f77f, 0x1f7ff, 0x1f8ff, 0x1f9ff, 0x2a6d6, 0x2b734, 0x2b81d, 0x2ceaf, 0x2fa1f, 0xe007f, 0xe01ef };
     //ImGui::Begin("UTF8 : Character Viewer | from: https://en.wikipedia.org/wiki/Unicode_font#Comparison_of_fonts", &show_another_window);
 
+
+    // Left
+    static int selected = 0;
     {
-
-        // Left
-        static int selected = 0;
+        ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+        for (int i = 0; i < (sizeof(names) / sizeof(names[0])); i++)
         {
-            ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-            for (int i = 0; i < (sizeof(names)/sizeof(names[0])); i++)
-            {
-                //char label[500];
-                //sprintf(label, "%s",names[i]);
-                if (ImGui::Selectable(names[i].c_str(), selected == i))
-                    selected = i;
-            }
-            ImGui::EndChild();
+            //char label[500];
+            //sprintf(label, "%s",names[i]);
+            if (ImGui::Selectable(names[i].c_str(), selected == i))
+                selected = i;
         }
-        ImGui::SameLine();
-
-        // Right
-        {
-            ImGui::BeginGroup();
-            ImGui::TextWrapped("%s: \n%d Glyphs [0x%X-0x%X]", names[selected].c_str(), end[selected] - start[selected], start[selected], end[selected]);
-            ImGui::Separator();
-
-            ImGui::BeginChild("Character View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-
-            //ImGui::GetForegroundDrawList()->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos()+ ImGui::GetWindowContentRegionMax(), ImU32(ImColor(1, 1, 1,100)));
-            ImVec2 topleft = ImGui::GetWindowPos() - ImVec2(ImGui::GetScrollX(),ImGui::GetScrollY());
-            static ImVec2 spacing = { ImGui::GetFontSize(),ImGui::GetFontSize() };
-
-            for (int i = 0x30; i <= 0x39; i++) {  // Draw 0-9 Above Character View
-                std::wstring temp(1, i);
-                ImGui::GetWindowDrawList()->AddText({ topleft.x + ((i % 16) * spacing.x),topleft.y}, ImColor(255, 255, 255, 125), from_wstring(temp.c_str()));
-            }
-            for (int i = 0x41; i <= 0x46; i++) { // Draw A-F Above Character View
-                std::wstring temp(1, i);
-                ImGui::GetWindowDrawList()->AddText({ topleft.x + (((i+9) % 16) * spacing.x),topleft.y }, ImColor(255, 255, 255, 125), from_wstring(temp.c_str()));
-            }
-
-            for (int i = start[selected]-(start[selected]%16) +15; i < end[selected]+15; i += 16) { // Draw Hex Locations to the right of the character view
-                char hex_string[20];
-                sprintf(hex_string, "0x%X", i);
-                ImGui::GetWindowDrawList()->AddText({topleft.x+(16*spacing.x),(start[selected] - end[selected] != 0) ? topleft.y + ((i - start[selected]) - (i % 16)) * (spacing.y / 16) + 16 : topleft.y + spacing.y }, ImColor(255, 255, 255, 125), hex_string);
-            } 
-
-            for (int i = start[selected]; i < end[selected] + 1; i++) {
-                std::wstring temp (1,i);
-                ImGui::GetWindowDrawList()->AddText({ topleft.x + ((i%16)*spacing.x),(start[selected]-end[selected] != 0)?topleft.y + ((i-start[selected])-(i%16))*(spacing.y/16)+16:topleft.y+spacing.y }, ImColor(255, 255, 255, 255), from_wstring(temp.c_str()));
-            }
-            ImGui::Dummy(ImVec2{16 * spacing.x,((end[selected] - start[selected] + 16) - ((16+end[selected]) % 16)) * (spacing.y / 16) + 16  }); // we need a dummy box so we can scroll
-            ImGui::EndGroup();
-        }
+        ImGui::EndChild();
     }
+    ImGui::SameLine();
+
+    // Right
+    {
+        ImGui::BeginGroup();
+        ImGui::TextWrapped("%s: \n%d Glyphs [0x%X-0x%X]", names[selected].c_str(), end[selected] - start[selected], start[selected], end[selected]);
+        ImGui::Separator();
+
+        ImGui::BeginChild("Character View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+
+        //ImGui::GetForegroundDrawList()->AddRectFilled(ImGui::GetWindowPos(), ImGui::GetWindowPos()+ ImGui::GetWindowContentRegionMax(), ImU32(ImColor(1, 1, 1,100)));
+        ImVec2 topleft = ImGui::GetWindowPos() - ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY());
+        static ImVec2 spacing = { ImGui::GetFontSize(),ImGui::GetFontSize() };
+
+        for (int i = 0x30; i <= 0x39; i++) {  // Draw 0-9 Above Character View
+            std::wstring temp(1, i);
+            ImGui::GetWindowDrawList()->AddText({ topleft.x + ((i % 16) * spacing.x),topleft.y }, ImColor(255, 255, 255, 125), from_wstring(temp.c_str()));
+        }
+        for (int i = 0x41; i <= 0x46; i++) { // Draw A-F Above Character View
+            std::wstring temp(1, i);
+            ImGui::GetWindowDrawList()->AddText({ topleft.x + (((i + 9) % 16) * spacing.x),topleft.y }, ImColor(255, 255, 255, 125), from_wstring(temp.c_str()));
+        }
+
+        for (int i = start[selected] - (start[selected] % 16) + 15; i < end[selected] + 15; i += 16) { // Draw Hex Locations to the right of the character view
+            char hex_string[20];
+            sprintf(hex_string, "0x%X", i);
+            ImGui::GetWindowDrawList()->AddText({ topleft.x + (16 * spacing.x),(start[selected] - end[selected] != 0) ? topleft.y + ((i - start[selected]) - (i % 16)) * (spacing.y / 16) + 16 : topleft.y + spacing.y }, ImColor(255, 255, 255, 125), hex_string);
+        }
+
+        for (int i = start[selected]; i < end[selected] + 1; i++) {
+            std::wstring temp(1, i);
+            ImGui::GetWindowDrawList()->AddText({ topleft.x + ((i % 16) * spacing.x),(start[selected] - end[selected] != 0) ? topleft.y + ((i - start[selected]) - (i % 16)) * (spacing.y / 16) + 16 : topleft.y + spacing.y }, ImColor(255, 255, 255, 255), from_wstring(temp.c_str()));
+        }
+        ImGui::Dummy(ImVec2{ 16 * spacing.x,((end[selected] - start[selected] + 16) - ((16 + end[selected]) % 16)) * (spacing.y / 16) + 16 }); // we need a dummy box so we can scroll
+        ImGui::EndChild();
+        ImGui::EndGroup();
+    }
+
     ImGui::End();
 }
