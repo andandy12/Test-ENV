@@ -6,7 +6,7 @@ BdApi.findModuleByProps("analyticsTrackingStoreMaker").AnalyticsActionHandlers.h
     BdApi.findModuleByProps("analyticsTrackingStoreMaker").AnalyticsActionHandlers.handleTrack = ()=>{}; // Works to block science/tracking requests no adverse affects seen so far
 BdApi.findModuleByProps("analyticsTrackingStoreMaker").AnalyticsActionHandlers.handleFingerprint // This seems crucial to verifying phone as well as other things
 
-BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport(/*discord token*/) // returns 400 | {token: ["Invalid token"]} 
-BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport("asd") // returns 500| {message: "500: Internal Server Error", code: 0}
+BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport(/*discord token*/) // returns 500| {message: "500: Internal Server Error", code: 0}
+BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport("asd")  // returns 400 | {token: ["Invalid token"]} 
 
 BdApi.findModuleByProps("analyticsTrackingStoreMaker")
