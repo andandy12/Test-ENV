@@ -5,7 +5,7 @@ module.exports = class OTRClass {
     cancelOrderedActionHandlerPRESENCE_UPDATE3 = () => { };
     cancelUpdateTokenInterval = () => { };
     getName() { return "AntiTokenLogger"; };
-    getDescription() { return "This will force all preview post requests to not happen."; };
+    getDescription() { return "Detect people logging into your account via web and mobile"; };
     getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
 
