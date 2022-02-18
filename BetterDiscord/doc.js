@@ -9,8 +9,6 @@ BdApi.findModuleByProps("analyticsTrackingStoreMaker").AnalyticsActionHandlers.h
 BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport(/*discord token*/) // returns 500| {message: "500: Internal Server Error", code: 0}
 BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport("asd")  // returns 400 | {token: ["Invalid token"]} 
 
-BdApi.findModuleByProps("analyticsTrackingStoreMaker")
-
 // 2/18/21 Remove your phone number from your account without needing to add another!
 BdApi.findModuleByProps("addPhoneWithoutPassword").removePhone(/*current password*/,"")
 
