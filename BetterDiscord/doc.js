@@ -14,7 +14,7 @@ BdApi.findModuleByProps("analyticsTrackingStoreMaker")
 // 2/18/21 Remove your phone number from your account without needing to add another!
 BdApi.findModuleByProps("addPhoneWithoutPassword").removePhone(/*current password*/,"")
 
-/*// Unverifing Email... This can be done by accessing a restricted endpoint https://discord.com/developers/docs/topics/gateway#privileged-intents
+/*// Unverify Email... This can be done by accessing a restricted endpoint https://discord.com/developers/docs/topics/gateway#privileged-intents
 https://discord.com/api/v9/channels/0/thread-members   https://discord.com/developers/docs/resources/channel#list-thread-members
 https://discord.com/api/v9/guilds/0/members            https://discord.com/developers/docs/resources/guild#list-guild-members
 */
