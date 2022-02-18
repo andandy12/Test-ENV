@@ -10,3 +10,6 @@ BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport(/*dis
 BdApi.findModuleByProps("addPhoneWithoutPassword").validatePhoneForSupport("asd")  // returns 400 | {token: ["Invalid token"]} 
 
 BdApi.findModuleByProps("analyticsTrackingStoreMaker")
+
+// 2/18/21 Remove your phone number from your account without needing to add another!
+BdApi.findModuleByProps("addPhoneWithoutPassword").removePhone(/*current password*/,"")
