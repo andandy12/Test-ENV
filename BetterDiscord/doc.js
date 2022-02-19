@@ -16,3 +16,6 @@ BdApi.findModuleByProps("addPhoneWithoutPassword").removePhone(/*current passwor
 https://discord.com/api/v9/channels/0/thread-members   https://discord.com/developers/docs/resources/channel#list-thread-members
 https://discord.com/api/v9/guilds/0/members            https://discord.com/developers/docs/resources/guild#list-guild-members
 */
+
+// 2/19/22 force enable the developer tabs can be useful for when you wanna stop analytics
+Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDeveloper",{get:()=>true})
