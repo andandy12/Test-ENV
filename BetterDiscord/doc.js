@@ -22,3 +22,5 @@ Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDevelo
 
 // report a server for cheating/hacks
 fetch("https://discord.com/api/v9/reporting/guild", {"method": "POST","headers": {"authorization": "Not Gonna Leave This Here","content-type": "application/json"},"body": "{\"id\":\"0\",\"version\":\"1.0\",\"variant\":\"1\",\"language\":\"en\",\"breadcrumbs\":[3,16,57],\"elements\":{},\"name\":\"guild\",\"guild_id\":\"serverID\"}"})
+// ReportNames object... these are the endpoints that you can report to 
+{"GUILD": "guild","GUILD_DISCOVERY": "guild_discovery","GUILD_DIRECTORY_ENTRY": "guild_directory_entry","MESSAGE": "message","STAGE_CHANNEL": "stage_channel","GUILD_SCHEDULED_EVENT": "guild_scheduled_event","FIRST_DM": "first_dm"}
