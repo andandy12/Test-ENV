@@ -19,6 +19,8 @@ https://discord.com/api/v9/guilds/0/members            https://discord.com/devel
 
 // 2/19/22 force enable the developer tabs can be useful for when you wanna stop analytics
 Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDeveloper",{get:()=>true})
+// when hasFlag is called return true if STAFF or VerifiedDeveloper else do original
+BdApi.findAllModules((e)=>{if(e.hasFlag != undefined){return true}})[1].hasFlag = (e,t) => {if(e == 1 || e == 131072){return true}else{return (e & t) === t}}
 
 // report a server for cheating/hacks
 fetch("https://discord.com/api/v9/reporting/guild", {"method": "POST","headers": {"authorization": "Not Gonna Leave This Here","content-type": "application/json"},"body": "{\"id\":\"0\",\"version\":\"1.0\",\"variant\":\"1\",\"language\":\"en\",\"breadcrumbs\":[3,16,57],\"elements\":{},\"name\":\"guild\",\"guild_id\":\"serverID\"}"})
