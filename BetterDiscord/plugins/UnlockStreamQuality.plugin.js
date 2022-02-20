@@ -15,6 +15,11 @@
         BdApi.showToast("Stream Settings Unlocked is starting");
         console.log("\n[Stream Settings Unlocked] Starting");
 
+
+
+        Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDeveloper",{get:()=>true})
+        //BdApi.findAllModules((e)=>{if(e.hasFlag != undefined){return true}})[1].hasFlag = (e,t) => {if(e == 1 || e == 131072){return true}else{return (e & t) === t}}
+
         //deletes userPremiumType and guildPremiumTier from the requirments array.
         this.originalRequirements = BdApi.findModuleByProps("ApplicationStreamPresets").ApplicationStreamSettingRequirements;
         for(let i =0; i<BdApi.findModuleByProps("ApplicationStreamPresets").ApplicationStreamSettingRequirements.length;i++){
@@ -103,6 +108,8 @@
     }
 
     stop() {
+        Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDeveloper",{get:()=>{return 0}})
+
         console.log("[Stop My Preview] Unpatching getGuildPermissions()");
         this.cancelMoreSettings();
 
