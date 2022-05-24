@@ -86,4 +86,62 @@ BdApi.findModuleByProps("shouldShowGameInLibrary").shouldShowGameInLibrary = ()=
 //    _.VIDEO - 12
 // mediaSinkWants - this.send(_.MEDIA_SINK_WANTS, e);
 //    _.MEDIA_SINK_WANTS - 15
-/*
+
+//5/24/2022
+// Preventing IDLE Status
+  // The handler for the idle event is below
+  function U() {
+    var e;
+    N = null !== (e = _.default.getIdleSince()) && void 0 !== e ? e : 0;
+    b = _.default.isAFK();
+    (O = y ? I.StatusTypes.INVISIBLE : m.default.status) ===
+      I.StatusTypes.ONLINE &&
+      N > 0 &&
+      (O = I.StatusTypes.IDLE);
+    var t = !1,
+      n =
+        C || O === I.StatusTypes.INVISIBLE
+          ? []
+          : E.default.getActivities().filter(M);
+    if (!(0, i.default)(R, n)) {
+      R = n;
+      t = !0;
+    }
+    var r = T.default.getRemoteActivities();
+    if (D !== r) {
+      D = r;
+      t = !0;
+    }
+    if (t) {
+      var a = R.find(function (e) {
+          return e.type === I.ActivityTypes.CUSTOM_STATUS;
+        }),
+        s = R.filter(function (e) {
+          return e.type !== I.ActivityTypes.CUSTOM_STATUS;
+        });
+      L =
+        s.length > 0
+          ? R
+          : null != a
+          ? [a].concat(
+              g(
+                (0, o.default)(D)
+                  .filter(function (e) {
+                    return e.type !== I.ActivityTypes.CUSTOM_STATUS;
+                  })
+                  .uniqBy(function (e) {
+                    return e.type + ":" + e.application_id + ":" + e.name;
+                  })
+                  .value()
+              )
+            )
+          : o.default.uniqBy(D, function (e) {
+              return e.type + ":" + e.application_id + ":" + e.name;
+            });
+    }
+  }
+  // we can see that if getIdleSince returns null we will never send a idle presence update
+  //  this can be achieved with better discord
+  BdApi.findModuleByProps('getIdleSince').getIdleSince = ()=>null
+  //  or without
+  (webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getIdleSince!==void 0).exports.default.getIdleSince = ()=>null
