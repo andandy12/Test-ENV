@@ -84,6 +84,8 @@ class stopIdle {
     this.togglebtnStopIdle = document.querySelector(
       `button[aria-label='Toggle idle updates']`
     );
+    this.revertStopIdle();
+    
   };
   uninitStopIdle = () => {
     this.revertStopIdle();
