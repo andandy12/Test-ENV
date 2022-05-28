@@ -1,5 +1,9 @@
 /**
  * @name UnlockStreamQuality
+ * @author andandy12
+ * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/UnlockStreamQuality.plugin.js
+ * @description This will unlock stream settings removing their requirments.
+ * @version 0.0.2
  */
  module.exports = class OTRClass {
     originalRequirements = [];
@@ -8,7 +12,7 @@
 
     getName() { return "Stream Settings Unlocked"; };
     getDescription() { return "This will unlock stream settings removing their requirments."; };
-    getVersion() { return "0.0.1"; };
+    getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -37,39 +41,40 @@
         BdApi.findModuleByProps("AppliedGuildBoostsRequiredForBoostedGuildTier").VerificationCriteria = {ACCOUNT_AGE: 0, MEMBER_AGE: 0};
         
         //Pretty self explainatory... this took long really long to find, but its worth as I didn't want to mod the websocket directly
-        this.cancelFakeDeafen = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("lobbyConnect").prototype, "voiceStateUpdate", {
+        this.cancelFakeDeafen = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("voiceStateUpdate").prototype, "voiceStateUpdate", {
             after: (e) => {
-                if(e.methodArguments[2] == true && e.methodArguments[3] != true) { // if muting and not false
+                console.log('cancelFakeDeafen',e);
+                if (e.methodArguments[0].selfMute == true && e.methodArguments[0].selfDeaf != true) { // if muting and not false
                     BdApi.showConfirmationModal(`plugin`, "Do you want to do a fake mute?", {
                         cancelText: "No",
                         confirmText: "Yes",
-                        onConfirm: () => { 
+                        onConfirm: () => {
                             BdApi.findModuleByProps("toggleSelfDeaf").toggleSelfMute();
                             setTimeout(() => {
-                                e.thisObject.send(4,{
-                                    guild_id: e.methodArguments[0],
-                                    channel_id: e.methodArguments[1],
+                                e.thisObject.send(4, {
+                                    guild_id: e.methodArguments[0].guildId,
+                                    channel_id: e.methodArguments[0].channelId,
                                     self_mute: true,
                                     self_deaf: false,
-                                    self_video: e.methodArguments[4]
+                                    self_video: e.methodArguments[0].selfVideo
                                 })
                             }, 250);
                         }
                     });
                 }
-                else if(e.methodArguments[3] == true) {
+                else if (e.methodArguments[0].selfDeaf == true) {
                     BdApi.showConfirmationModal(`plugin`, "Do you want to do a fake deafen?", {
                         cancelText: "No",
                         confirmText: "Yes",
-                        onConfirm: () => { 
+                        onConfirm: () => {
                             BdApi.findModuleByProps("toggleSelfDeaf").toggleSelfDeaf();
                             setTimeout(() => {
-                                e.thisObject.send(4,{
-                                    guild_id: e.methodArguments[0],
-                                    channel_id: e.methodArguments[1],
+                                e.thisObject.send(4, {
+                                    guild_id: e.methodArguments[0].guildId,
+                                    channel_id: e.methodArguments[0].channelId,
                                     self_mute: true,
                                     self_deaf: true,
-                                    self_video: e.methodArguments[4]
+                                    self_video: e.methodArguments[0].selfVideo
                                 })
                             }, 250);
                         }
@@ -77,6 +82,7 @@
                 }
             }
         });
+
 
         console.log("[Stop My Preview] Patching getGuildPermissions()");
         this.cancelMoreSettings = BdApi.monkeyPatch(BdApi.findModuleByProps("getGuildPermissions").__proto__,"getGuildPermissionProps",{
