@@ -4,7 +4,6 @@
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/AntiIdle.js
  * @version 0.0.2
  * @description Prevent discord from setting your presence to idle.
- * 
  */
 module.exports = class StopIdlePlugin {
   getName() {
