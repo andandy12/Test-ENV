@@ -22,7 +22,8 @@ CHAR* from_wstring(const wchar_t * wstr)
 // This is how to load the BMP PLANE into the current font atlas
 ImVector<ImWchar> ranges;
 ImFontGlyphRangesBuilder builder;
-static const ImWchar customrange[] = { 0x0001,0xFFFE };
+// FFF0 is the end of the bmp range - https://en.wikipedia.org/wiki/Plane_(Unicode)#Assigned_characters
+static const ImWchar customrange[] = { 0x0001,0xFFF0 };
 
 builder.AddRanges(&customrange[0]);
 builder.BuildRanges(&ranges);
