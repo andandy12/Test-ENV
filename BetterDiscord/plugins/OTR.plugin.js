@@ -1,23 +1,22 @@
 /**
  * @name OTR
  */
-
-// todo: When receiving a ui event be able to modify displayed data and log it to file so we can do it in future
-//    we replace the content of a message_create event if its potentially encrypted and its not ours.
-// todo: Display the current state of chats (unsupported, plaintext, encrypted) 
-//    potentially with current chat color
-//        selector to current chat document.querySelectorAll('[data-list-item-id*="channelid"]')
-//    potentially with textinput color
-//        this displays the status of the last message
-// todo: Settings pannel that is iterative and able to support per channel settings
-//    wow this is bad... atleast it only runs when you open the panel and works as intended
-
 module.exports = class OTRClass {
-    cancelSendPatch = () => { };
-    cancelReceivePatch = () => { };
-    tempDefine = () => { };
+    // todo: When receiving a ui event be able to modify displayed data and log it to file so we can do it in future
+    //    we replace the content of a message_create event if its potentially encrypted and its not ours.
+    // todo: Display the current state of chats (unsupported, plaintext, encrypted) 
+    //    potentially with current chat color
+    //        selector to current chat document.querySelectorAll('[data-list-item-id*="channelid"]')
+    //    potentially with textinput color
+    //        this displays the status of the last message
+    // todo: Settings pannel that is iterative and able to support per channel settings
+    //    wow this is bad... atleast it only runs when you open the panel and works as intended
 
-    currentUser = BdApi.findModuleByProps("dispatch").getCurrentUser();
+    cancelSendPatch() {  };
+    cancelReceivePatch() {  };
+    tempDefine() {  };
+
+    currentUser = BdApi.findModuleByProps("getCurrentUser").getCurrentUser();
     randhex = Math.random().toString(16).substr(2);
     /**
      * Obsfucates strings so that we can use them in DOM or other locations.
@@ -28,8 +27,9 @@ module.exports = class OTRClass {
 
     getName() { return "OTR"; };
     getDescription() { return "This is my OTR implementation its probably not safe."; };
-    getVersion() { return "0.0.1"; };
+    getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
+
     /**
      * Updates the color of the current text entry area within the current text channel.
      * @param {String} hue hue 
@@ -99,7 +99,7 @@ module.exports = class OTRClass {
     }
     /**
      * Very basic function that directs event to handlers.
-     * @param {Object} evt The event that either dirtyDispatch or dispatch receives.
+     * @param {Object} evt The event that the dispatcher(previously dirtyDispatch) receives.
      */
     processDispatchEvent(evt) {
         switch (evt.type) {
@@ -127,6 +127,7 @@ module.exports = class OTRClass {
      */
     pushLocalOTRToMem(channelid) {
         let data = BdApi.loadData(this.getName(), channelid);
+        console.log(data);
         if (data && typeof OTR[channelid == "undefined"]) {// if we have data locally and its not in mem
             OTR[channelid] = new OTR({ "priv": DSA(data.priv), "instance_tag": data.instance_tag });
 
@@ -143,9 +144,10 @@ module.exports = class OTRClass {
             OTR[channelid].on('io', (msg) => { // this fires when we are sending
                 if (!msg.includes("OTR")) {// if msg isnt encrypted
                     this.updateTextAreaColor(0);
-                    if (!OTR[channelid].REQUIRE_ENCRYPTION) {
+                    console.log(OTR[channelid]);
+                    if (OTR[channelid].REQUIRE_ENCRYPTION != true) {
                         this.forceSendMessage(OTR[channelid].CHANNEL, msg);
-                        BdApi.showToast(`${this.getName()} Sending unencrypted message... REQUIRE_ENCRYPTION = false`, { type: "error" });
+                        BdApi.showToast(`${this.getName()} Sending unencrypted message... REQUIRE_ENCRYPTION = ${OTR[channelid].REQUIRE_ENCRYPTION}`, { type: "error" });
                     } else
                         BdApi.showConfirmationModal(`${this.getName()} plugin"`, "Last message was not sent, because REQUIRE_ENCRYPTION is true in current channel.", {
                             cancelText: "Turn off",
@@ -237,11 +239,11 @@ module.exports = class OTRClass {
         }
     }
     /**
-     * Patches dirtyDispatch._orderedActionHandlers.Message_create[4] so we can intercept messages sent/received.
+     * Patches _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4] so we can intercept messages sent/received.
      */
     patchReceiveEvent() {
         // patching dispatch.events.MESSAGE_CREATE does not call the functions
-        // but patching dirtyDispatch._orderedActionHandlers.MESSAGE_CREATE works on some functions
+        // but patching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE works on some functions
         // however in testing with logpoints we can see that flux complains about a slow dispatch
         // everytime you send a message All MESSAGE_CREATE functions are called three times (hitting enter, text going grey, text going white)... no idea what grey and white mean
         // the below lists are not complete as I did not want to include events that would get spammed
@@ -250,9 +252,10 @@ module.exports = class OTRClass {
         // the ones that fire on MESSAGE_UPDATE are 1,9
         // the ones that fire on MESSAGE_DELETE are 17
 
-        if (typeof BdApi.findModuleByProps("dirtyDispatch")._orderedActionHandlers.MESSAGE_CREATE != "undefined") {
-            console.log("[OTR] Patching dirtyDispatch._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
-            this.cancelReceivePatch = BdApi.monkeyPatch(BdApi.findModuleByProps("dirtyDispatch")._orderedActionHandlers.MESSAGE_CREATE[4], "actionHandler", {
+        // 9-14-2022 it has come to my attention that the way discord dispatch works has changed completely
+        if (typeof BdApi.findModuleByProps("_dispatcher")._dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE != "undefined") {
+            console.log("[OTR] Patching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
+            this.cancelReceivePatch = BdApi.monkeyPatch(BdApi.findModuleByProps("_dispatcher")._dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4], "actionHandler", {
                 "before": (e) => {
                     this.processDispatchEvent(e.methodArguments[0]);
                 }
@@ -293,7 +296,7 @@ module.exports = class OTRClass {
     stop() {
         console.log("[OTR] Unpatching sendMessage()");
         this.cancelSendPatch();
-        console.log("[OTR] Unpatching dirtyDispatch._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
+        console.log("[OTR] Unpatching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
         this.cancelReceivePatch();
 
         console.log("[OTR] Stopped");
@@ -309,9 +312,9 @@ module.exports = class OTRClass {
                         let channel = this.parentElement.parentElement.parentElement.parentElement.parentElement.previousElementSibling.innerText;
                         let settingname = this.parentElement.previousElementSibling.innerText;
                         let settingval = this.children[0].checked;
-                        BdApi.Plugins.get(\'${this.getName()}\').instance.updateData(\'${this.getName()}\',channel,(data) => \{data[settingname] = settingval;return data\})">
+                        BdApi.Plugins.get(\'${this.getName()}\').instance.updateData(\'${this.getName()}\',channel,(data) => \{data[settingname] = settingval;return data\});
+                        BdApi.Plugins.get(\'${this.getName()}\').instance.pushLocalOTRToMem(channel);">
                         <input class="${this.obsfucateString("checkbox")}" type="checkbox">
-                        <span class="${this.obsfucateString("slider")}"></span>
                     </label>
                 </td>`;
         document.querySelectorAll(`[data-list-item-id*= private-channels]`).forEach((e) => { // for all elements in the current dm list
