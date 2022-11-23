@@ -3,7 +3,7 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/FakeMute-Deafen.plugin.js
  * @description Allows you to fake mute and deafen.
- * @version 0.0.3
+ * @version 0.0.4
  */
 module.exports = class FalseMute {
     originalRequirements = [];
@@ -13,7 +13,7 @@ module.exports = class FalseMute {
 
     getName() { return "Fake Mute and Deafen"; };
     getDescription() { return "Allows you to fake mute and deafen."; };
-    getVersion() { return "0.0.3"; };
+    getVersion() { return "0.0.4"; };
     getAuthor() { return "andandy12"; };
 
     socket = () => { }
@@ -24,7 +24,7 @@ module.exports = class FalseMute {
 
         window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
             for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                Object.keys(m.exports).forEach((elem, index, array) => {
+                m?.exports !== undefined && Object.keys(m.exports).forEach((elem, index, array) => {
                     if (m.exports?.[elem]?.__proto__?.getSocket !== undefined)
                         this.socket = m.exports?.[elem]?.__proto__?.getSocket();
                 })
