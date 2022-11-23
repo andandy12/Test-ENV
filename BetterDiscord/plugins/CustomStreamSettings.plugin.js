@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.2
+ * @version 0.0.3
  */
  module.exports = class StreamSettings {
     cancelMoreSettings = () => { };
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.2"; };
+    getVersion() { return "0.0.3"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -55,6 +55,50 @@
 
     }
 
+    setHwndAsSoundshareSource(hwnd) {
+        if (this?.discord_utilsModule === undefined) {
+            //BdApi.findModuleByProps("requireModule").requireModule("discord_utils").getPidFromWindowHandle("66646")
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                        if ((m.exports?.[elem]?.requireModule !== undefined)) {
+                            this.discord_utilsModule = m.exports?.[elem]?.requireModule("discord_utils")
+                        }
+                    })
+                }
+            }])
+        }
+        this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
+    }
+
+    setPidAsSoundshareSource(pid) {
+        if (this?.mediaEngine === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                        if ((m.exports?.[elem]?.getMediaEngine !== undefined)) {
+                            this.mediaEngine = m.exports?.[elem]?.getMediaEngine();
+                        }
+                    })
+                }
+            }])
+        }
+        if (this.discord_utilsModule === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                        if ((m.exports?.[elem]?.requireModule !== undefined)) {
+                            this.discord_utilsModule = m.exports?.[elem]?.requireModule("discord_utils")
+                        }
+                    })
+                }
+            }])
+        }
+        //BdApi.findModuleByProps("getMediaEngine").getMediaEngine().setSoundshareSource(12812, true, "stream")
+        this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
+    }
+
+
     getSettingsPanel(){
         let currentres = BdApi.Data.load(this.getName(),"resolution");
         let currentfps = BdApi.Data.load(this.getName(),"frameRate");
@@ -80,3 +124,5 @@
         BdApi.showToast("[CustomStreamSettings] Stopped");
     }
 }
+
+
