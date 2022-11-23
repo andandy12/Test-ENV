@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.3
+ * @version 0.0.5
  */
  module.exports = class StreamSettings {
     cancelMoreSettings = () => { };
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.3"; };
+    getVersion() { return "0.0.5"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -56,6 +56,7 @@
     }
 
     setHwndAsSoundshareSource(hwnd) {
+        console.log(`setHwndAsSoundshareSource ${hwnd}`);
         if (this?.discord_utilsModule === undefined) {
             //BdApi.findModuleByProps("requireModule").requireModule("discord_utils").getPidFromWindowHandle("66646")
             window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
@@ -72,6 +73,7 @@
     }
 
     setPidAsSoundshareSource(pid) {
+        console.log(`setPidAsSoundshareSource ${pid}`);
         if (this?.mediaEngine === undefined) {
             window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
                 for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
@@ -112,6 +114,14 @@
                 <label>Resolution</label>
                 <input type="range" min="100" max="${screen.height}" value="${currentres}" oninput="this.nextElementSibling.innerText = this.value" onchange='BdApi.Data.save("${this.getName()}","resolution",this.value);'\\>
                 <label>${currentres}</label>
+            </div>
+            <div style="background-color:var(--info-warning-background)">
+                <p style="color:var(--text-danger)">These things will freeze discord ui if invalid info entered.</p>
+                <div class="flex flex-row">
+                    <input type="number" id="${this.getName()}-soundsourceinput"\\>
+                    <button onmousedown="BdApi.Plugins.get(\'CustomStreamSettings\').instance.setPidAsSoundshareSource(parseInt(document.getElementById(\'${this.getName()}-soundsourceinput\').value))">Set pid</button>
+                    <button onmousedown="BdApi.Plugins.get(\'CustomStreamSettings\').instance.setHwndAsSoundshareSource(parseInt(document.getElementById(\'${this.getName()}-soundsourceinput\').value))">Set hwnd</button>
+                </div>
             </div>
         </div>`;
     }
