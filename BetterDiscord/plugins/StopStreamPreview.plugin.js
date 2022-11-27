@@ -5,13 +5,16 @@
     cancelMakeChunkedRequestPatch = () => { };
     getName() { return "Stop My Preview"; };
     getDescription() { return "This will force all preview post requests to not happen."; };
-    getVersion() { return "0.0.2"; };
+    getVersion() { return "0.0.3"; };
     getAuthor() { return "andandy12"; };
 
     start() {
         BdApi.showToast("Stop My Preview is starting");
         console.log("\n[Stop My Preview] Starting");
 
+        BdApi.showToast("[Stop My Preview] is deprecated use CustomStreamSettings the url is in the console", {type:"error"});
+        console.log("[Stop My Preview] is deprecated use https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js");
+        
         this.patchmakeChunkedRequest();
     }
     /**
