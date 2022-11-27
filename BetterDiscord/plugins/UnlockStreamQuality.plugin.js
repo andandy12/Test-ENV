@@ -19,7 +19,9 @@
         BdApi.showToast("Stream Settings Unlocked is starting");
         console.log("\n[Stream Settings Unlocked] Starting");
 
-
+        BdApi.showToast("[Stream Settings Unlocked] is deprecated use CustomStreamSettings the url is in the console", {type:"error"});
+        console.log("[Stream Settings Unlocked] is deprecated use https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js");
+        
 
         Object.defineProperty(BdApi.findModuleByProps("isDeveloper").__proto__,"isDeveloper",{get:()=>true})
         //BdApi.findAllModules((e)=>{if(e.hasFlag != undefined){return true}})[1].hasFlag = (e,t) => {if(e == 1 || e == 131072){return true}else{return (e & t) === t}}
