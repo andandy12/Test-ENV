@@ -3,20 +3,20 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.6
+ * @version 0.0.7
  */
 module.exports = class StreamSettings {
     cancelMoreSettings = () => { };
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.6"; };
+    getVersion() { return "0.0.7"; };
     getAuthor() { return "andandy12"; };
 
     start() {
         BdApi.UI.showToast("CustomStreamSettings is starting");
         console.log("\n[CustomStreamSettings] Starting");
         this.patchsetDesktopSource();
-        if (BdApi.Data.load(this.getName(), "overrideWithDataBlank") == null) {
+        if (BdApi.Data.load(this.getName(), "preview").overrideWithDataBlank == null) {
             BdApi.Data.save(this.getName(), "frameRate", 30);
             BdApi.Data.save(this.getName(), "preview", { "forceDisabled": true, "overrideFile": false, "overrideWithData": "data:image/jpeg;base64,", "overrideWithDataBlank": "data:image/jpeg;base64," });
             BdApi.Data.save(this.getName(), "resolution", screen.height);
@@ -204,7 +204,7 @@ module.exports = class StreamSettings {
                         if(this.files[0].size < 200000) // they will reject larger than 200kb
                             reader.readAsDataURL(this.files[0]);
                         else
-                        BdApi.UI.showToast("You can not use files larger than 200kb",{type:"error"});
+                            BdApi.UI.showToast("You can not use files larger than 200kb",{type:"error"});
                     };'>
                     
                     <input type="text" disabled="" value="${preview.overrideWithData.substring(0,100)}">
