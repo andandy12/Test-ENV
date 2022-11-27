@@ -16,7 +16,7 @@ module.exports = class StreamSettings {
         BdApi.UI.showToast("CustomStreamSettings is starting");
         console.log("\n[CustomStreamSettings] Starting");
         this.patchsetDesktopSource();
-        if (BdApi.Data.load(this.getName(), "preview").overrideWithDataBlank == null) {
+        if (BdApi.Data.load(this.getName(), "preview")?.overrideWithDataBlank === undefined) {
             BdApi.Data.save(this.getName(), "frameRate", 30);
             BdApi.Data.save(this.getName(), "preview", { "forceDisabled": true, "overrideFile": false, "overrideWithData": "data:image/jpeg;base64,", "overrideWithDataBlank": "data:image/jpeg;base64," });
             BdApi.Data.save(this.getName(), "resolution", screen.height);
