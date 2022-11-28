@@ -3,13 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.8
+ * @version 0.0.9
  */
 module.exports = class StreamSettings {
-    cancelMoreSettings = () => { };
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.8"; };
+    getVersion() { return "0.0.9"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -52,15 +51,6 @@ module.exports = class StreamSettings {
             args[0]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
             args[0]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
         })
-
-        if (this.cancelMoreSettings == null)
-            setTimeout(() => {
-                BdApi.UI.showToast(`Failed To Patch MediaEngineStore handler`, { type: "error" });
-                console.log("You cannot patch MediaEngineStore actionHandler without starting a stream... Start a stream and close it to init the handler.");
-                this.patchsetDesktopSource();
-            }, 10000);
-        else
-            BdApi.UI.showToast(`Stream quality succesfully patched`);
 
     }
 
@@ -127,6 +117,15 @@ module.exports = class StreamSettings {
                     args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
             }
         })
+        // this patch will remove any preview with a data url syncing what you see with the server
+        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getPreviewURL"), "getPreviewURL", (_, args, ret) => {
+            if (ret?.startsWith("data:image/jpeg;base64,") === true) {
+                let previews = _.__getLocalVars().streamPreviews;
+                let preview = previews[Object.keys(previews).find(m => m.includes(`${args[0]}:${args[1]}:${args[2]}`))];
+                console.log(`[${this.getName()}] Queuing preview for deletion`,preview);
+                preview.expires = Date.now();
+            }
+        });
     }
 
     patchForEmojis() { // this will allow you to type emojis and have them auto embed
@@ -165,7 +164,7 @@ module.exports = class StreamSettings {
             for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
                 try {
                     m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                        if (m.exports?.[elem]?.toString()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && m.exports !== window) {
+                        if (m.exports?.[elem]?.toString?.()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && m.exports !== window) {
                             BdApi.Patcher.instead(this.getName(), m.exports, elem, async (e, t) => {
                                 BdApi.findModuleByProps("dispatch").dispatch({
                                     type: "SPOTIFY_PROFILE_UPDATE",
@@ -230,7 +229,7 @@ module.exports = class StreamSettings {
         Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
             value: this.patchVerificationCriteriaOrignalReq, configurable: true
         });
-        
+
     }
 
     getSettingsPanel() {
@@ -314,5 +313,3 @@ module.exports = class StreamSettings {
         BdApi.UI.showToast("[CustomStreamSettings] Stopped");
     }
 }
-
-
