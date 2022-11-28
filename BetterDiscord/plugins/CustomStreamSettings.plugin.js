@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.7
+ * @version 0.0.8
  */
 module.exports = class StreamSettings {
     cancelMoreSettings = () => { };
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.7"; };
+    getVersion() { return "0.0.8"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -21,8 +21,12 @@ module.exports = class StreamSettings {
             BdApi.Data.save(this.getName(), "preview", { "forceDisabled": true, "overrideFile": false, "overrideWithData": "data:image/jpeg;base64,", "overrideWithDataBlank": "data:image/jpeg;base64," });
             BdApi.Data.save(this.getName(), "resolution", screen.height);
         }
-        this.patchForEmojis();
         this.patchStreamPreview();
+        // everything below is bypasses I previously had in old plugins
+        this.patchForEmojis();
+        this.patchVerificationCriteria();
+        this.patchGuildPermission();
+        this.patchSpotifyPrem();
     }
 
     patchsetDesktopSource() {
@@ -51,7 +55,7 @@ module.exports = class StreamSettings {
 
         if (this.cancelMoreSettings == null)
             setTimeout(() => {
-                BdApi.UI.showToast(`Failed To Patch MediaEngineStore handler`,{type:"error"});
+                BdApi.UI.showToast(`Failed To Patch MediaEngineStore handler`, { type: "error" });
                 console.log("You cannot patch MediaEngineStore actionHandler without starting a stream... Start a stream and close it to init the handler.");
                 this.patchsetDesktopSource();
             }, 10000);
@@ -113,6 +117,18 @@ module.exports = class StreamSettings {
         this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
     }
 
+    patchStreamPreview() {
+        BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", (_, args, ret) => {
+            if ((args[0].endsWith("preview") && args[2].method == "POST" && args[1]?.thumbnail !== undefined)) {
+                let preview = BdApi.Data.load(this.getName(), "preview")
+                if (preview.overrideFile)
+                    args[1].thumbnail = preview.overrideWithData;
+                if (preview.forceDisabled)
+                    args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
+            }
+        })
+    }
+
     patchForEmojis() { // this will allow you to type emojis and have them auto embed
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
@@ -143,19 +159,78 @@ module.exports = class StreamSettings {
         });
     }
 
-    patchStreamPreview() {
-        BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", (_, args, ret) => {
-            console.log(`test makeChunkedRequest`, _, args);
-            if ((args[0].endsWith("preview") && args[2].method == "POST" && args[1]?.thumbnail !== undefined)) {
-                let preview = BdApi.Data.load(this.getName(), "preview")
-                console.log(`test 3 makeChunkedRequest`,preview);
-                if(preview.overrideFile)
-                    args[1].thumbnail = preview.overrideWithData;
-                if(preview.forceDisabled)
-                    args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
+
+    patchSpotifyPrem() {// this will allow you to listen along, etc. without premium
+        window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+            for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                try {
+                    m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                        if (m.exports?.[elem]?.toString()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && m.exports !== window) {
+                            BdApi.Patcher.instead(this.getName(), m.exports, elem, async (e, t) => {
+                                BdApi.findModuleByProps("dispatch").dispatch({
+                                    type: "SPOTIFY_PROFILE_UPDATE",
+                                    accountId: e,
+                                    isPremium: true,
+                                });
+                                return t;
+                            })
+                        }
+                    })
+                } catch (e) { console.error(e) }
             }
-            console.log(`test2 makeChunkedRequest`, _, args);
+        }])
+        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getActiveSocketAndDevice"), "getActiveSocketAndDevice", (_, args, ret) => { ret.socket.isPremium = true; return ret });
+    }
+
+    patchGuildPermission() {
+        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("canAccessGuildSettings"), "canAccessGuildSettings", (_, args, ret) => {
+            return ret = true;
+        });
+        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getGuildPermissions").__proto__, "getGuildPermissionProps", (_, args, ret) => {
+            ret.canViewGuildAnalytics = true;
+            ret.canManageGuild = true;
+            ret.canManageRoles = true;
+            ret.canManageChannels = true;
+            ret.canManageWebhooks = true;
+            return ret;
         })
+    }
+
+    // was in original plugin it allows you to talk in vcs before the 10 minute timer when joining a new server
+    patchVerificationCriteria() {
+        if (this.patchVerificationCriteriaModule === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    try {
+                        typeof m?.exports === "object" && Object.keys(m.exports).forEach((elem, index, array) => {
+                            if (typeof m.exports[elem] === "object")
+                                if (m.exports[elem] !== null && m.exports[elem] !== undefined && Object.keys(m.exports[elem])[0] === "ACCOUNT_AGE") {
+                                    this.patchVerificationCriteriaModule = m.exports;
+                                    this.patchVerificationCriteriaKey = elem;
+                                    if (this.patchVerificationCriteriaOrignalReq === undefined)
+                                        this.patchVerificationCriteriaOrignalReq = m.exports[elem];
+                                }
+                        })
+                    } catch (e) { console.error(e) }
+                }
+            }])
+        }
+
+        if (this.patchVerificationCriteriaModule === undefined)
+            console.error(this.getName(), "Unable to find Vericiation Criteria Module, search for MEMBER_AGE in all folders");
+
+        Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
+            value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
+        })
+    }
+
+    unpatchVerificationCriteria() {
+        if (this.patchVerificationCriteriaOrignalReq === undefined)
+            return console.error(this.getName(), "Attempted to restore the original verification criteria but they dont exist");
+        Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
+            value: this.patchVerificationCriteriaOrignalReq, configurable: true
+        });
+        
     }
 
     getSettingsPanel() {
@@ -175,7 +250,7 @@ module.exports = class StreamSettings {
             </div>
             <div>
                 <label>Empty stream preview</label>
-                <input type="checkbox" ${preview.forceDisabled?"checked":""} oninput='{
+                <input type="checkbox" ${preview.forceDisabled ? "checked" : ""} oninput='{
                     console.log(this);
                     let preview = BdApi.Data.load("${this.getName()}", "preview");
                     preview.forceDisabled = this.checked;
@@ -184,7 +259,7 @@ module.exports = class StreamSettings {
             </div>
             <div>
                 <label>Override preview with file</label>
-                <input type="checkbox" ${preview.overrideFile?"checked":""} oninput='{
+                <input type="checkbox" ${preview.overrideFile ? "checked" : ""} oninput='{
                     let preview = BdApi.Data.load("${this.getName()}", "preview");
                     preview.overrideFile = this.checked;
                     BdApi.Data.save("${this.getName()}","preview",preview);
@@ -207,7 +282,7 @@ module.exports = class StreamSettings {
                             BdApi.UI.showToast("You can not use files larger than 200kb",{type:"error"});
                     };'>
                     
-                    <input type="text" disabled="" value="${preview.overrideWithData.substring(0,100)}">
+                    <input type="text" disabled="" value="${preview.overrideWithData.substring(0, 100)}">
                     <button onmousedown='{
                         let preview = BdApi.Data.load("${this.getName()}", "preview");
                         preview.overrideWithData = preview.overrideWithDataBlank;
@@ -232,9 +307,8 @@ module.exports = class StreamSettings {
 
         BdApi.Patcher.unpatchAll(this.getName());
 
-        // typeof this?.unpatchAnimated === "function" && this.unpatchAnimated();
-        // typeof this?.unpatchAnywhere === "function" && this.unpatchAnywhere();
-        // typeof this?.unpatchsendMessage === "function" && this.unpatchsendMessage();
+        this.unpatchVerificationCriteria();
+
 
         console.log("[CustomStreamSettings] Stopped");
         BdApi.UI.showToast("[CustomStreamSettings] Stopped");
