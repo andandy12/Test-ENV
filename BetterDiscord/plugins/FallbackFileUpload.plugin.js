@@ -19,10 +19,7 @@ module.exports = class LargerFileUpload {
     start() {
         BdApi.showToast(`${this.getName()} is starting`);
         console.log(`\n${this.getName()} Starting`);
-
-        // BdApi.findModuleByProps("getSocket").__proto__.getSocket
-
-        //Pretty self explainatory... this took long really long to find, but its worth as I didn't want to mod the websocket directly
+        
         this.setupUploadFallback();
     }
 
@@ -34,7 +31,6 @@ module.exports = class LargerFileUpload {
                         m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
                             if (m.exports?.[elem]?.setUploads !== undefined && m.exports?.[elem]?.popFirstFile !== undefined)
                                 this.removeAttachment = m.exports[elem].remove;
-                            //console.log(m.exports[elem].remove())
                         })
                     } catch (e) { console.error(this.getName(), e) }
                 }
