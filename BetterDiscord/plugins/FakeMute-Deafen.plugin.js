@@ -6,88 +6,76 @@
  * @version 0.0.4
  */
 module.exports = class FalseMute {
-    originalRequirements = [];
-    originalBoostedGuildFeatures = [];
-    cancelFakeDeafen = () => { };
-    cancelAquiringPatch = () => { };
 
     getName() { return "Fake Mute and Deafen"; };
     getDescription() { return "Allows you to fake mute and deafen."; };
     getVersion() { return "0.0.4"; };
     getAuthor() { return "andandy12"; };
 
-    socket = () => { }
-
     start() {
         BdApi.showToast(`${this.getName()} is starting`);
         console.log(`\n${this.getName()} Starting`);
 
-        window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-            for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                m?.exports !== undefined && Object.keys(m.exports).forEach((elem, index, array) => {
-                    if (m.exports?.[elem]?.__proto__?.getSocket !== undefined)
-                        this.socket = m.exports?.[elem]?.__proto__?.getSocket();
-                })
-            }
-        }]);
-        if(typeof this.socket.send != "function")
-            throw new Error("Failed to get websocket");
-        //console.log(this.socket);
-
-        //Pretty self explainatory... this took long really long to find, but its worth as I didn't want to mod the websocket directly
         this.doFakeMuteDeafPatch();
     }
 
     doFakeMuteDeafPatch() {
-        this.cancelFakeDeafen = BdApi.Patcher.after(this.getName() + "voiceStateUpdatePatch", this.socket, "voiceStateUpdate", (_, args, ret) => {
-            console.log('cancelFakeDeafen', _, args, ret, this.socket);
-            if (args[0].selfMute == true && args[0].selfDeaf != true) {
-                BdApi.showConfirmationModal(this.getName(), "Do you want to do a fake mute?", {
+
+        if (this.socket === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    try { // sometime the module has exports from a different frame so this is a lazy fix
+                        m?.exports !== undefined && Object.keys(m.exports).forEach((elem, index, array) => {
+                            if (m?.exports?.[elem]?.__proto__?.getSocket !== undefined)
+                                this.socket = m.exports?.[elem]?.__proto__?.getSocket();
+                        })
+                    } catch (e) { console.error(this.getName(), e) }
+                }
+            }]);
+            if (typeof this.socket?.send != "function")
+                throw new Error("Failed to get websocket");
+        }
+
+        let prompt = async (text, args) => {
+            return await new Promise((resolve, reject) => {
+                console.log("prompting for ", text);
+                BdApi.showConfirmationModal(this.getName(), `Do you want to do a fake ${text}?`, {
                     cancelText: "No",
                     confirmText: "Yes",
                     onConfirm: () => {
-                        BdApi.findModuleByProps("toggleSelfDeaf").toggleSelfMute();
+                        if (text !== "Video")
+                            BdApi.findModuleByProps("toggleSelfDeaf")[`toggleSelf${text}`]();
                         setTimeout(() => {
                             this.socket.send(4, {
-                                guild_id: args[0].guildId,
-                                channel_id: args[0].channelId,
-                                self_mute: true,
-                                self_deaf: false,
-                                self_video: args[0].selfVideo
+                                guild_id: args.guildId,
+                                channel_id: args.channelId,
+                                self_mute: args.selfMute,
+                                self_deaf: args.selfDeaf,
+                                self_video: args.selfVideo
                             })
-                        }, 250);
-                    }
+                        }, 250); 
+                        resolve(true);
+                    },
+                    onCancel: () => { resolve(false); }
                 });
-            } else if (args[0].selfDeaf == true) {
-                BdApi.showConfirmationModal(this.getName(), "Do you want to do a fake deafen?", {
-                    cancelText: "No",
-                    confirmText: "Yes",
-                    onConfirm: () => {
-                        BdApi.findModuleByProps("toggleSelfDeaf").toggleSelfDeaf();
-                        setTimeout(() => {
-                            this.socket.send(4, {
-                                guild_id: args[0].guildId,
-                                channel_id: args[0].channelId,
-                                self_mute: true,
-                                self_deaf: true,
-                                self_video: args[0].selfVideo
-                            }
-                            );
-                        }, 250);
-                    }
-                });
+            })
+        }
+
+        BdApi.Patcher.before(this.getName(), this.socket, "voiceStateUpdate", async (_, args, ret) => {
+            if (args[0].selfDeaf === true) {
+                args[0].selfDeaf = await prompt("Deaf", args[0]);
+            } else if (args[0].selfMute === true) {
+                args[0].selfMute = await prompt("Mute", args[0]);
             }
-        });
+        })
     }
 
     stop() {
-        this.cancelFakeDeafen();
-
+        BdApi.Patcher.unpatchAll(this.getName());
         console.log(`[${this.getName()}] Stopped`);
         BdApi.showToast(`[${this.getName()}] Stopped`);
     }
 }
-
 
 // !function(e) {
 //     e[e.DISPATCH = 0] = "DISPATCH";
