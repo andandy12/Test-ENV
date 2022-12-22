@@ -3,12 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.9
+ * @version 0.0.10
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.9"; };
+    getVersion() { return "0.0.10"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -129,6 +129,20 @@ module.exports = class StreamSettings {
     }
 
     patchForEmojis() { // this will allow you to type emojis and have them auto embed
+        if (this.emojiFrequency === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    try { // sometime the module has exports from a different frame so this is a lazy fix
+                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                            if ((m.exports?.[elem]?.__proto__?.__getLocalVars !== undefined) && (m.exports?.[elem]?.__proto__?.getTopEmoji !== undefined)) {
+                                this.emojiFrequency = m.exports?.[elem]?.__proto__?.__getLocalVars()?.emojiFrecency;//yes its Frecency not Frequency in discord source...
+                            }
+                        })
+                    } catch (e) { console.error(this.getName(), e) }
+                }
+            }])
+        }
+
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
         BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("sendMessage"), "sendMessage", (_, args, ret) => {
@@ -138,10 +152,13 @@ module.exports = class StreamSettings {
                 let localarrofmessages = [...arrofmessages];
                 arrofmessages = [];
                 localarrofmessages.forEach(message => {
-                    let temparr = message.split(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g"));
+                    var namestr = emoji.originalName == undefined ? emoji.allNamesString : ":"+emoji.originalName+":";
+                    let temparr = message.split(new RegExp("(<.?" + namestr + "\\d*>)", "g"));
                     for (let index = 0; index < temparr.length; index++) {
-                        if (temparr[index].match(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g")))
+                        if (temparr[index].match(new RegExp("(<.?" + namestr + "\\d*>)", "g"))){
                             temparr[index] = emoji.url;
+                            this.emojiFrequency.track(emoji.id, undefined);
+                        }
                     }
                     arrofmessages.push(...temparr);
                 });
