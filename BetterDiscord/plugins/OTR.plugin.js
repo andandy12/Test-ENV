@@ -14,7 +14,11 @@ module.exports = class OTRClass {
 
     cancelSendPatch() {  };
     cancelReceivePatch() {  };
+    cancelReceivePatch2(){};
+    cancelloadCompletePatch() {  };
     tempDefine() {  };
+
+    messageMap = {};
 
     currentUser = BdApi.findModuleByProps("getCurrentUser").getCurrentUser();
     randhex = Math.random().toString(16).substr(2);
@@ -27,7 +31,7 @@ module.exports = class OTRClass {
 
     getName() { return "OTR"; };
     getDescription() { return "This is my OTR implementation its probably not safe."; };
-    getVersion() { return "0.0.2"; };
+    getVersion() { return "0.0.3"; };
     getAuthor() { return "andandy12"; };
 
     /**
@@ -44,6 +48,7 @@ module.exports = class OTRClass {
 
         this.patchReceiveEvent();
         this.patchSendEvent();
+        this.patchLoadComplete(); 
 
         this.addJSDependenciesToDOM();
 
@@ -98,19 +103,6 @@ module.exports = class OTRClass {
         }
     }
     /**
-     * Very basic function that directs event to handlers.
-     * @param {Object} evt The event that the dispatcher(previously dirtyDispatch) receives.
-     */
-    processDispatchEvent(evt) {
-        switch (evt.type) {
-            case "MESSAGE_CREATE":
-                this.processMESSAGE_CREATE(evt.message);
-                break;
-            default:
-                break;
-        }
-    }
-    /**
      * Update a key for a plugin after performing a operation on said data.
      * @param {String} plugin The plugin name where the object is stored
      * @param {String} key The key of the object that is saved
@@ -142,6 +134,7 @@ module.exports = class OTRClass {
             OTR[channelid].CHANNEL = channelid;
 
             OTR[channelid].on('io', (msg) => { // this fires when we are sending
+                console.log('[OTR] io event',msg);
                 if (!msg.includes("OTR")) {// if msg isnt encrypted
                     this.updateTextAreaColor(0);
                     console.log(OTR[channelid]);
@@ -193,36 +186,32 @@ module.exports = class OTRClass {
      * @param {Object} message A discord message object
      */
     processMESSAGE_CREATE(message) {
-        //console.log("[OTR] processing message", message);
+        console.log("[OTR] processMESSAGE_CREATE", message);
 
         if (message.author.id != this.currentUser.id) {
 
             if (typeof OTR[message.channel_id] != "undefined") { // if the channels otr is defined
                 if (typeof OTR[message.channel_id]._getEvents().ui == "undefined") {// if we dont have the ui event defined we want to define it (this has to be here so we can modify what the client receives)
-                    OTR[message.channel_id].on('ui', (msg) => {  // received message fired
-                        if (OTR[message.channel_id].authstate != 0 || OTR[message.channel_id].msgstate != 1 || msg.includes("?OTRv")) { // if auth hasnt completed or if msg is querymsg
-                            // channel isnt secure
-                            if (msg.includes("OTR:")) // if msg potentially encrypted
-                                console.log("[OTR] Received potentially encrypted message over insecure channel", msg);
-                            else
-                                console.log("[OTR] Received plaintext msg on insecure channel", msg);
-                        } else {
-                            // channel is secure?
-                            if (msg.includes("OTR:")) { // msg is potentially encrypted
-                                console.log("[OTR] Received encrypted msg to over secure channel, replace msg if we come across it", msg);
-                                message.content = msg;
-                                //make to sure to replace original content with msg when we come across it
-                            } else
-                                console.log("[OTR] Recieved Unencrypted msg under secure channel", msg);
+                    OTR[message.channel_id].on('ui', (msg,encrypted,meta) => {  // received message fired
+                        console.log("[OTR] ui event",msg,encrypted,meta);
+                        if(encrypted){
+                            // we will place the new content in the messageMap
+                            this.messageMap[meta.id] = msg;
+                            setTimeout(() => {
+                                // we clear the channel cache and re-fetch the messages
+                                BdApi.Plugins.get("OTR").instance.getmodule.clear(meta.channel_id);
+                                document.querySelector("li div[aria-label^=Close]").parentElement.click();
+                            }, 200);
                         }
-                    })
+                    });
                 }
                 console.log(`[OTR] OTR object ${message.channel_id} is receiving ${message.content}`);
-                OTR[message.channel_id].receiveMsg(message.content);
+                OTR[message.channel_id].receiveMsg(message.content,message);
             } else {
                 this.pushLocalOTRToMem(message.channel_id);
             }
         }
+        
     }
 
     /**
@@ -242,32 +231,27 @@ module.exports = class OTRClass {
      * Patches _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4] so we can intercept messages sent/received.
      */
     patchReceiveEvent() {
-        // patching dispatch.events.MESSAGE_CREATE does not call the functions
-        // but patching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE works on some functions
-        // however in testing with logpoints we can see that flux complains about a slow dispatch
-        // everytime you send a message All MESSAGE_CREATE functions are called three times (hitting enter, text going grey, text going white)... no idea what grey and white mean
-        // the below lists are not complete as I did not want to include events that would get spammed
-        // the ones that fire on MESSAGE_CREATE are 1,4,5,6,7,8,9,10,11,13,15,16,17,19,20,21,22
-        // the ones that fire on MESSAGE_ACK are 17,20
-        // the ones that fire on MESSAGE_UPDATE are 1,9
-        // the ones that fire on MESSAGE_DELETE are 17
-
-        // 9-14-2022 it has come to my attention that the way discord dispatch works has changed completely
-        if (typeof BdApi.findModuleByProps("_dispatcher")._dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE != "undefined") {
-            console.log("[OTR] Patching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
-            this.cancelReceivePatch = BdApi.monkeyPatch(BdApi.findModuleByProps("_dispatcher")._dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4], "actionHandler", {
-                "before": (e) => {
-                    this.processDispatchEvent(e.methodArguments[0]);
+ 
+        if (this.getmodule === undefined) {
+            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
+                    try { // sometime the module has exports from a different frame so this is a lazy fix
+                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
+                            if ((m.exports?.[elem]?.get !== undefined) && (m.exports?.[elem]?.hasPresent !== undefined)&& (m.exports?.[elem]?._channelMessages !== undefined)) {
+                                this.getmodule = m.exports?.[elem];
+                            }
+                        })
+                    } catch (e) { console.error(this.getName(), e) }
                 }
-            });
-        } else {
-            BdApi.showConfirmationModal(`${"OTR"} plugin`, "In order to patch the required MESSAGE_CREATE event you need to send/receive a message.",
-                {
-                    cancelText: "Disable Addon", onCancel: () => { BdApi.Plugins.disable("OTR") }, onConfirm: () => {
-                        setTimeout(() => this.patchReceiveEvent(), 10000);
-                    }
-                });
+            }])
         }
+
+        console.log("[OTR] Patching receiveMessage()");
+        this.cancelReceivePatch = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("receiveMessage").prototype, "receiveMessage", {
+            "before": (e) => {
+                this.processMESSAGE_CREATE(e.methodArguments[0]);
+            }
+        });
     }
     /**
      * Patches sendMessage so we can intercept messages sent.
@@ -276,12 +260,36 @@ module.exports = class OTRClass {
         console.log("[OTR] Patching sendMessage()");
         this.cancelSendPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("sendMessage"), "sendMessage", {
             instead: (a) => {
+                console.log("[OTR] sendMessage()",a);
                 if (typeof OTR[a.methodArguments[0]] != "undefined") // if we have a object for the channel we are sending to 
                     OTR[a.methodArguments[0]].sendMsg(a.methodArguments[1].content);
                 else {
                     console.log(`[OTR] Sending plaintext to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content} `);
                     this.forceSendMessage(a.methodArguments[0], a.methodArguments[1].content);
                 }
+            }
+        });
+    }
+    /**
+     * Patches loadComplete as to intercept message loaded in bulk such as previous messages.
+     */
+    patchLoadComplete() {
+        console.log("[OTR] Patching loadComplete()");
+        this.cancelloadCompletePatch = BdApi.monkeyPatch(BdApi.findModuleByPrototypes("loadComplete").prototype, "loadComplete", {
+            before: (a) => {
+                let messages = a.methodArguments[0].newMessages;
+                console.log("[OTR] loadComplete() pre",a);
+                console.log("[OTR] loadComplete() pre",this.messageMap);
+                if(typeof this.messageMap == 'object'){
+                    for (const messageID in this.messageMap) {
+                        let index = messages.findIndex(e=>e.id == messageID)
+                        if(index != -1){
+                            console.log("[OTR] loadComplete() mid",index,messages[index]);
+                            messages[index].content = this.messageMap[messageID];
+                        }
+                    }
+                }
+                console.log("[OTR] loadComplete() post",a);
             }
         });
     }
@@ -296,8 +304,11 @@ module.exports = class OTRClass {
     stop() {
         console.log("[OTR] Unpatching sendMessage()");
         this.cancelSendPatch();
-        console.log("[OTR] Unpatching _dispatcher._actionHandlers._orderedActionHandlers.MESSAGE_CREATE[4].actionHandler()");
+        console.log("[OTR] Unpatching receiveMessage()");
         this.cancelReceivePatch();
+        this.cancelReceivePatch2();
+        console.log("[OTR] Unpatching loadComplete()");
+        this.cancelloadCompletePatch();
 
         console.log("[OTR] Stopped");
         BdApi.showToast("[OTR] Stopped");
