@@ -18,7 +18,7 @@ module.exports = class OTRClass {
     cancelloadCompletePatch() {  };
     tempDefine() {  };
 
-    messageMap = {};
+    messageMap = {"1099218964682383451" : "temptest123"};
 
     currentUser = BdApi.findModuleByProps("getCurrentUser").getCurrentUser();
     randhex = Math.random().toString(16).substr(2);
@@ -31,7 +31,7 @@ module.exports = class OTRClass {
 
     getName() { return "OTR"; };
     getDescription() { return "This is my OTR implementation its probably not safe."; };
-    getVersion() { return "0.0.3"; };
+    getVersion() { return "0.0.2"; };
     getAuthor() { return "andandy12"; };
 
     /**
@@ -181,6 +181,37 @@ module.exports = class OTRClass {
             });
         }
     }
+
+    /**
+         * This will query the message and replace innerText for that element.
+         * @param {String} channelId 
+         * @param {String} messageId 
+         */
+    rerenderMessage(channelId,messageId){
+        let newMessageContent = BdApi.Plugins.get("OTR").instance.getmodule._channelMessages[channelId]._map[messageId].content;
+        let messageelem = document.querySelector(`#message-content-${messageId}`);
+        if(messageelem?.innerText != undefined)
+            messageelem.innerText = newMessageContent;
+    }
+
+    /**
+     * We update the message cache with the selected content.
+     * @param {String} channelId 
+     * @param {String} messageId 
+     * @param {String} content 
+     */
+    updateMessageCache(channelId,messageId,content){
+        setTimeout(() => {
+            //console.log("[OTR] updateMessageCache pre",channelId,messageId,content);
+            if(BdApi.Plugins.get("OTR").instance.getmodule?._channelMessages[channelId]?._map[messageId] != undefined){
+                //console.log("[OTR] updateMessageCache mid",channelId,messageId,content);
+                BdApi.Plugins.get("OTR").instance.getmodule._channelMessages[channelId]._map[messageId].content = content;
+                this.rerenderMessage(channelId,messageId);
+            }
+        }, 250);
+        
+    }
+
     /**
      * When receiving a message we either modify or leave it alone.
      * @param {Object} message A discord message object
@@ -191,17 +222,23 @@ module.exports = class OTRClass {
         if (message.author.id != this.currentUser.id) {
 
             if (typeof OTR[message.channel_id] != "undefined") { // if the channels otr is defined
+                // if the message is an init message we should reset the OTR
+                if(message.content.startsWith("?OTRv")){
+                    console.log("[OTR] Received query message... initing new object ");
+                    BdApi.deleteData(this.getName(),message.channel_id);
+                    OTR[message.channel_id] = undefined;
+                    this.storeLocalOTR(message.channel_id);
+                    this.pushLocalOTRToMem(message.channel_id);
+                    return OTR[message.channel_id].receiveMsg(message.content);
+                }
+                
                 if (typeof OTR[message.channel_id]._getEvents().ui == "undefined") {// if we dont have the ui event defined we want to define it (this has to be here so we can modify what the client receives)
                     OTR[message.channel_id].on('ui', (msg,encrypted,meta) => {  // received message fired
                         console.log("[OTR] ui event",msg,encrypted,meta);
                         if(encrypted){
                             // we will place the new content in the messageMap
                             this.messageMap[meta.id] = msg;
-                            setTimeout(() => {
-                                // we clear the channel cache and re-fetch the messages
-                                BdApi.Plugins.get("OTR").instance.getmodule.clear(meta.channel_id);
-                                document.querySelector("li div[aria-label^=Close]").parentElement.click();
-                            }, 200);
+                            this.updateMessageCache(meta.channel_id,meta.id,msg);
                         }
                     });
                 }
@@ -210,9 +247,18 @@ module.exports = class OTRClass {
             } else {
                 this.pushLocalOTRToMem(message.channel_id);
             }
+        } else {
+            if(message.state != "SENDING" && OTR[message.channel_id] != undefined && OTR[message.channel_id]?.lastMessage != undefined){
+                this.messageMap[message.id] = OTR[message.channel_id].lastMessage;
+                this.updateMessageCache(message.channel_id,message.id,OTR[message.channel_id].lastMessage);
+                OTR[message.channel_id].lastMessage = undefined;
+            }
         }
-        
     }
+
+    
+
+    
 
     /**
      * Create then write a OTR object to memory.
@@ -261,8 +307,10 @@ module.exports = class OTRClass {
         this.cancelSendPatch = BdApi.monkeyPatch(BdApi.findModuleByProps("sendMessage"), "sendMessage", {
             instead: (a) => {
                 console.log("[OTR] sendMessage()",a);
-                if (typeof OTR[a.methodArguments[0]] != "undefined") // if we have a object for the channel we are sending to 
+                if (typeof OTR[a.methodArguments[0]] != "undefined"){ // if we have a object for the channel we are sending to 
                     OTR[a.methodArguments[0]].sendMsg(a.methodArguments[1].content);
+                    OTR[a.methodArguments[0]].lastMessage = a.methodArguments[1].content;
+                }
                 else {
                     console.log(`[OTR] Sending plaintext to channel ${a.methodArguments[0]}: ${a.methodArguments[1].content} `);
                     this.forceSendMessage(a.methodArguments[0], a.methodArguments[1].content);
