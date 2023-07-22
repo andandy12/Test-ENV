@@ -3,23 +3,24 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.10
+ * @version 0.0.11
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.10"; };
+    getVersion() { return "0.0.11"; };
     getAuthor() { return "andandy12"; };
 
     start() {
         BdApi.UI.showToast("CustomStreamSettings is starting");
         console.log("\n[CustomStreamSettings] Starting");
-        this.patchsetDesktopSource();
+
         if (BdApi.Data.load(this.getName(), "preview")?.overrideWithDataBlank === undefined) {
             BdApi.Data.save(this.getName(), "frameRate", 30);
             BdApi.Data.save(this.getName(), "preview", { "forceDisabled": true, "overrideFile": false, "overrideWithData": "data:image/jpeg;base64,", "overrideWithDataBlank": "data:image/jpeg;base64," });
             BdApi.Data.save(this.getName(), "resolution", screen.height);
         }
+        this.patchsetDesktopSource();
         this.patchStreamPreview();
         // everything below is bypasses I previously had in old plugins
         this.patchForEmojis();
@@ -28,8 +29,7 @@ module.exports = class StreamSettings {
         this.patchSpotifyPrem();
     }
 
-    patchsetDesktopSource() {
-
+    patchsetDesktopSource = () => {
         if (this.mediaEngine === undefined) {
             window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
                 for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
@@ -44,17 +44,26 @@ module.exports = class StreamSettings {
             }])
         }
 
-        BdApi.Patcher.before(this.getName(), this.mediaEngine, "setDesktopSource", (_, args, ret) => {
-            console.log("Test", args);
-            if (args[0]?.id == undefined)
+        // 7-22-23 Discord retired the old function and is now using setGoLiveSource
+        // BdApi.Patcher.before(this.getName(), this.mediaEngine, "setDesktopSource", (_, args, ret) => {
+        //     if (args[0]?.id == undefined)
+        //         return;
+        //     args[0]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
+        //     args[0]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
+        // })
+
+        BdApi.Patcher.before(this.getName(), this.mediaEngine, "setGoLiveSource", (_, args, ret) => {
+            //console.log("[CustomStreamSettings] setGoLiveSource args", args);
+            if (args[0]["desktopDescription"]?.["id"] == undefined)
                 return;
-            args[0]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
-            args[0]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
+            args[0]["desktopDescription"]["hdrCaptureMode"] = "always";
+            args[0]["quality"]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
+            args[0]["quality"]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
         })
 
     }
 
-    setHwndAsSoundshareSource(hwnd) {
+    setHwndAsSoundshareSource = (hwnd) => {
         console.log(`setHwndAsSoundshareSource ${hwnd}`);
         if (this?.discord_utilsModule === undefined) {
 
@@ -75,7 +84,7 @@ module.exports = class StreamSettings {
         this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
     }
 
-    setPidAsSoundshareSource(pid) {
+    setPidAsSoundshareSource = (pid) => {
         console.log(`setPidAsSoundshareSource ${pid}`);
         if (this?.mediaEngine === undefined) {
             window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
@@ -107,7 +116,7 @@ module.exports = class StreamSettings {
         this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
     }
 
-    patchStreamPreview() {
+    patchStreamPreview = () => {
         BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", (_, args, ret) => {
             if ((args[0].endsWith("preview") && args[2].method == "POST" && args[1]?.thumbnail !== undefined)) {
                 let preview = BdApi.Data.load(this.getName(), "preview")
@@ -122,27 +131,13 @@ module.exports = class StreamSettings {
             if (ret?.startsWith("data:image/jpeg;base64,") === true) {
                 let previews = _.__getLocalVars().streamPreviews;
                 let preview = previews[Object.keys(previews).find(m => m.includes(`${args[0]}:${args[1]}:${args[2]}`))];
-                console.log(`[${this.getName()}] Queuing preview for deletion`,preview);
+                console.log(`[${this.getName()}] Queuing preview for deletion`, preview);
                 preview.expires = Date.now();
             }
         });
     }
 
-    patchForEmojis() { // this will allow you to type emojis and have them auto embed
-        if (this.emojiFrequency === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if ((m.exports?.[elem]?.__proto__?.__getLocalVars !== undefined) && (m.exports?.[elem]?.__proto__?.getTopEmoji !== undefined)) {
-                                this.emojiFrequency = m.exports?.[elem]?.__proto__?.__getLocalVars()?.emojiFrecency;//yes its Frecency not Frequency in discord source...
-                            }
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
-                }
-            }])
-        }
-
+    patchForEmojis = () => { // this will allow you to type emojis and have them auto embed
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
         BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
         BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("sendMessage"), "sendMessage", (_, args, ret) => {
@@ -152,13 +147,10 @@ module.exports = class StreamSettings {
                 let localarrofmessages = [...arrofmessages];
                 arrofmessages = [];
                 localarrofmessages.forEach(message => {
-                    var namestr = emoji.originalName == undefined ? emoji.allNamesString : ":"+emoji.originalName+":";
-                    let temparr = message.split(new RegExp("(<.?" + namestr + "\\d*>)", "g"));
+                    let temparr = message.split(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g"));
                     for (let index = 0; index < temparr.length; index++) {
-                        if (temparr[index].match(new RegExp("(<.?" + namestr + "\\d*>)", "g"))){
+                        if (temparr[index].match(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g")))
                             temparr[index] = emoji.url;
-                            this.emojiFrequency.track(emoji.id, undefined);
-                        }
                     }
                     arrofmessages.push(...temparr);
                 });
@@ -176,7 +168,7 @@ module.exports = class StreamSettings {
     }
 
 
-    patchSpotifyPrem() {// this will allow you to listen along, etc. without premium
+    patchSpotifyPrem = () => {// this will allow you to listen along, etc. without premium
         window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
             for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
                 try {
@@ -198,7 +190,7 @@ module.exports = class StreamSettings {
         BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getActiveSocketAndDevice"), "getActiveSocketAndDevice", (_, args, ret) => { ret.socket.isPremium = true; return ret });
     }
 
-    patchGuildPermission() {
+    patchGuildPermission = () => {
         BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("canAccessGuildSettings"), "canAccessGuildSettings", (_, args, ret) => {
             return ret = true;
         });
@@ -213,19 +205,21 @@ module.exports = class StreamSettings {
     }
 
     // was in original plugin it allows you to talk in vcs before the 10 minute timer when joining a new server
-    patchVerificationCriteria() {
+    patchVerificationCriteria = () => {
         if (this.patchVerificationCriteriaModule === undefined) {
             window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
                 for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
                     try {
                         typeof m?.exports === "object" && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if (typeof m.exports[elem] === "object")
+                            if (typeof m.exports[elem] === "object") {
                                 if (m.exports[elem] !== null && m.exports[elem] !== undefined && Object.keys(m.exports[elem])[0] === "ACCOUNT_AGE") {
                                     this.patchVerificationCriteriaModule = m.exports;
                                     this.patchVerificationCriteriaKey = elem;
-                                    if (this.patchVerificationCriteriaOrignalReq === undefined)
+                                    if (this.patchVerificationCriteriaOrignalReq === undefined) {
                                         this.patchVerificationCriteriaOrignalReq = m.exports[elem];
+                                    }
                                 }
+                            }
                         })
                     } catch (e) { console.error(e) }
                 }
@@ -240,7 +234,7 @@ module.exports = class StreamSettings {
         })
     }
 
-    unpatchVerificationCriteria() {
+    unpatchVerificationCriteria = () => {
         if (this.patchVerificationCriteriaOrignalReq === undefined)
             return console.error(this.getName(), "Attempted to restore the original verification criteria but they dont exist");
         Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
@@ -249,7 +243,7 @@ module.exports = class StreamSettings {
 
     }
 
-    getSettingsPanel() {
+    getSettingsPanel = () => {
         let currentres = BdApi.Data.load(this.getName(), "resolution");
         let currentfps = BdApi.Data.load(this.getName(), "frameRate");
         let preview = BdApi.Data.load(this.getName(), "preview");
@@ -330,3 +324,5 @@ module.exports = class StreamSettings {
         BdApi.UI.showToast("[CustomStreamSettings] Stopped");
     }
 }
+
+
