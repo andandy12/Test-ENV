@@ -3,12 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.11
+ * @version 0.0.12
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.11"; };
+    getVersion() { return "0.0.12"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -229,17 +229,23 @@ module.exports = class StreamSettings {
         if (this.patchVerificationCriteriaModule === undefined)
             console.error(this.getName(), "Unable to find Vericiation Criteria Module, search for MEMBER_AGE in all folders");
 
-        Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
-            value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
-        })
+        // v8 has since made this cause a type error... so I am switching to a hacky solution
+        // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
+        //     value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
+        // })
+        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }}
+
     }
 
     unpatchVerificationCriteria = () => {
         if (this.patchVerificationCriteriaOrignalReq === undefined)
             return console.error(this.getName(), "Attempted to restore the original verification criteria but they dont exist");
-        Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
-            value: this.patchVerificationCriteriaOrignalReq, configurable: true
-        });
+        
+        // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
+        //     value: this.patchVerificationCriteriaOrignalReq, configurable: true
+        // });
+        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : this.patchVerificationCriteriaOrignalReq }}
+
 
     }
 
