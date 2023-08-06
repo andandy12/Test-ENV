@@ -3,12 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.12
+ * @version 0.0.13
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.12"; };
+    getVersion() { return "0.0.13"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -233,7 +233,7 @@ module.exports = class StreamSettings {
         // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
         //     value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
         // })
-        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }}
+        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }};
 
     }
 
@@ -244,9 +244,7 @@ module.exports = class StreamSettings {
         // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
         //     value: this.patchVerificationCriteriaOrignalReq, configurable: true
         // });
-        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : this.patchVerificationCriteriaOrignalReq }}
-
-
+        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : this.patchVerificationCriteriaOrignalReq };
     }
 
     getSettingsPanel = () => {
@@ -318,17 +316,14 @@ module.exports = class StreamSettings {
         </div>`;
     }
 
-    stop() {
+    stop = () => {
         console.log(`[CustomStreamSettings] Unpatching all patches`);
 
         BdApi.Patcher.unpatchAll(this.getName());
 
         this.unpatchVerificationCriteria();
 
-
         console.log("[CustomStreamSettings] Stopped");
         BdApi.UI.showToast("[CustomStreamSettings] Stopped");
     }
 }
-
-
