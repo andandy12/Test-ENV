@@ -69,7 +69,7 @@ function imageapi(model, imageurl) {
     }
   })();
   rand = Math.round(100000000000 * Math.random()) + ''; // this is the salt they use
-  trialkey = 'tryit-' + e + '-' + g(userAgent + g(userAgent + g(userAgent + rand + 'x')));
+  trialkey = 'tryit-' + rand + '-' + blackBox(userAgent + blackBox(userAgent + blackBox(userAgent + rand + 'x')));
   console.log(`model: ${model} | key: ${trialkey} | imageurl ${imageurl}`);
 
   const options = {
