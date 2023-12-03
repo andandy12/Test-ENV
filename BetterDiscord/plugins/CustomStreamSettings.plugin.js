@@ -3,12 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.13
+ * @version 0.0.14
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.13"; };
+    getVersion() { return "0.0.14"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -23,25 +23,35 @@ module.exports = class StreamSettings {
         this.patchsetDesktopSource();
         this.patchStreamPreview();
         // everything below is bypasses I previously had in old plugins
-        this.patchForEmojis();
+        //this.patchForEmojis();
         this.patchVerificationCriteria();
         this.patchGuildPermission();
         this.patchSpotifyPrem();
     }
 
+    modules = undefined;
+    populateModules = () => {
+        window.webpackChunkdiscord_app.push([[Symbol()], {}, r => this.modules = r]);
+    }
+    getModules = () => {
+        this.populateModules();
+        return modules.c;
+    }
+    findModules = (cond) => {
+        return Object.values(this.getModules()).filter(m => cond(m) == true);
+    }
+
+    moduleDepth1 = (cond) => {
+        return findModules((m) => {
+            try {
+                return m?.exports != undefined && Object.entries(m.exports).find(e => cond(e)) != undefined
+            } catch (e) { return false; }
+        });
+    }
+
     patchsetDesktopSource = () => {
         if (this.mediaEngine === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if ((m.exports?.[elem]?.getMediaEngine !== undefined)) {
-                                this.mediaEngine = m.exports?.[elem]?.getMediaEngine();
-                            }
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
-                }
-            }])
+            moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
         }
 
         // 7-22-23 Discord retired the old function and is now using setGoLiveSource
@@ -53,205 +63,147 @@ module.exports = class StreamSettings {
         // })
 
         BdApi.Patcher.before(this.getName(), this.mediaEngine, "setGoLiveSource", (_, args, ret) => {
-            //console.log("[CustomStreamSettings] setGoLiveSource args", args);
-            if (args[0]["desktopDescription"]?.["id"] == undefined)
-                return;
-            args[0]["desktopDescription"]["hdrCaptureMode"] = "always";
-            args[0]["quality"]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
-            args[0]["quality"]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
-        })
+        //console.log("[CustomStreamSettings] setGoLiveSource args", args);
+        if (args[0]["desktopDescription"]?.["id"] == undefined)
+            return;
+        args[0]["desktopDescription"]["hdrCaptureMode"] = "always";
+        args[0]["quality"]["frameRate"] = parseInt(BdApi.Data.load(this.getName(), "frameRate")) || 1; // if this is a string it will work only in the metadata
+        args[0]["quality"]["resolution"] = parseInt(BdApi.Data.load(this.getName(), "resolution")) || screen.height;
+    })
 
     }
 
-    setHwndAsSoundshareSource = (hwnd) => {
-        console.log(`setHwndAsSoundshareSource ${hwnd}`);
-        if (this?.discord_utilsModule === undefined) {
+setHwndAsSoundshareSource = (hwnd) => {
+    console.log(`setHwndAsSoundshareSource ${hwnd}`);
+    if (this?.discord_utilsModule === undefined) {
+        moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.requireModule("discord_utils")))
+    }
+    this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
+}
 
-            //BdApi.findModuleByProps("requireModule").requireModule("discord_utils").getPidFromWindowHandle("66646")
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
+setPidAsSoundshareSource = (pid) => {
+    console.log(`setPidAsSoundshareSource ${pid}`);
+    if (this.mediaEngine === undefined) {
+        moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
+    }
+    if (this?.discord_utilsModule === undefined) {
+        moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.[elem]?.requireModule("discord_utils")))
+    }
+    //BdApi.findModuleByProps("getMediaEngine").getMediaEngine().setSoundshareSource(12812, true, "stream")
+    this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
+}
 
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if ((m.exports?.[elem]?.requireModule !== undefined)) {
-                                this.discord_utilsModule = m.exports?.[elem]?.requireModule("discord_utils")
-                            }
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
-                }
-            }])
+patchStreamPreview = () => {
+    BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", (_, args, ret) => {
+        if ((args[0].endsWith("preview") && args[2].method == "POST" && args[1]?.thumbnail !== undefined)) {
+            let preview = BdApi.Data.load(this.getName(), "preview")
+            if (preview.overrideFile)
+                args[1].thumbnail = preview.overrideWithData;
+            if (preview.forceDisabled)
+                args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
         }
-        this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
-    }
-
-    setPidAsSoundshareSource = (pid) => {
-        console.log(`setPidAsSoundshareSource ${pid}`);
-        if (this?.mediaEngine === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if ((m.exports?.[elem]?.getMediaEngine !== undefined)) {
-                                this.mediaEngine = m.exports?.[elem]?.getMediaEngine();
-                            }
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
-                }
-            }])
+    })
+    // this patch will remove any preview with a data url syncing what you see with the server
+    BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getPreviewURL"), "getPreviewURL", (_, args, ret) => {
+        if (ret?.startsWith("data:image/jpeg;base64,") === true) {
+            let previews = _.__getLocalVars().streamPreviews;
+            let preview = previews[Object.keys(previews).find(m => m.includes(`${args[0]}:${args[1]}:${args[2]}`))];
+            console.log(`[${this.getName()}] Queuing preview for deletion`, preview);
+            preview.expires = Date.now();
         }
-        if (this.discord_utilsModule === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if ((m.exports?.[elem]?.requireModule !== undefined)) {
-                                this.discord_utilsModule = m.exports?.[elem]?.requireModule("discord_utils")
-                            }
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
+    });
+}
+
+patchForEmojis = () => { // this will allow you to type emojis and have them auto embed
+    BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
+    BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
+    BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("sendMessage"), "sendMessage", (_, args, ret) => {
+        let arrofmessages = [args[1].content];
+        args[1]?.validNonShortcutEmojis?.filter(e => e.managed !== true)?.forEach((emoji, index, array) => {
+            // loop through all messages and split by the regex
+            let localarrofmessages = [...arrofmessages];
+            arrofmessages = [];
+            localarrofmessages.forEach(message => {
+                let temparr = message.split(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g"));
+                for (let index = 0; index < temparr.length; index++) {
+                    if (temparr[index].match(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g")))
+                        temparr[index] = emoji.url;
                 }
-            }])
-        }
-        //BdApi.findModuleByProps("getMediaEngine").getMediaEngine().setSoundshareSource(12812, true, "stream")
-        this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
-    }
-
-    patchStreamPreview = () => {
-        BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("makeChunkedRequest"), "makeChunkedRequest", (_, args, ret) => {
-            if ((args[0].endsWith("preview") && args[2].method == "POST" && args[1]?.thumbnail !== undefined)) {
-                let preview = BdApi.Data.load(this.getName(), "preview")
-                if (preview.overrideFile)
-                    args[1].thumbnail = preview.overrideWithData;
-                if (preview.forceDisabled)
-                    args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
-            }
-        })
-        // this patch will remove any preview with a data url syncing what you see with the server
-        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getPreviewURL"), "getPreviewURL", (_, args, ret) => {
-            if (ret?.startsWith("data:image/jpeg;base64,") === true) {
-                let previews = _.__getLocalVars().streamPreviews;
-                let preview = previews[Object.keys(previews).find(m => m.includes(`${args[0]}:${args[1]}:${args[2]}`))];
-                console.log(`[${this.getName()}] Queuing preview for deletion`, preview);
-                preview.expires = Date.now();
-            }
-        });
-    }
-
-    patchForEmojis = () => { // this will allow you to type emojis and have them auto embed
-        BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
-        BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
-        BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("sendMessage"), "sendMessage", (_, args, ret) => {
-            let arrofmessages = [args[1].content];
-            args[1]?.validNonShortcutEmojis?.filter(e => e.managed !== true)?.forEach((emoji, index, array) => {
-                // loop through all messages and split by the regex
-                let localarrofmessages = [...arrofmessages];
-                arrofmessages = [];
-                localarrofmessages.forEach(message => {
-                    let temparr = message.split(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g"));
-                    for (let index = 0; index < temparr.length; index++) {
-                        if (temparr[index].match(new RegExp("(<.?" + emoji.allNamesString + "\\d*>)", "g")))
-                            temparr[index] = emoji.url;
-                    }
-                    arrofmessages.push(...temparr);
-                });
+                arrofmessages.push(...temparr);
             });
-            for (let index = 0; index < arrofmessages.length - 1; index++) {
-                if (arrofmessages[index].trim() !== "") {
-                    let tempargs = JSON.parse(JSON.stringify(args));
-                    tempargs[1].content = arrofmessages[index];
-                    tempargs[1].validNonShortcutEmojis = [];
-                    BdApi.findModuleByProps("sendMessage").sendMessage(args[0], tempargs[1], undefined, {});
-                }
-            }
-            args[1].content = arrofmessages.pop();
         });
-    }
-
-
-    patchSpotifyPrem = () => {// this will allow you to listen along, etc. without premium
-        window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-            for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                try {
-                    m?.exports && Object.keys(m.exports).forEach((elem, index, array) => {
-                        if (m.exports?.[elem]?.toString?.()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && m.exports !== window) {
-                            BdApi.Patcher.instead(this.getName(), m.exports, elem, async (e, t) => {
-                                BdApi.findModuleByProps("dispatch").dispatch({
-                                    type: "SPOTIFY_PROFILE_UPDATE",
-                                    accountId: e,
-                                    isPremium: true,
-                                });
-                                return t;
-                            })
-                        }
-                    })
-                } catch (e) { console.error(e) }
+        for (let index = 0; index < arrofmessages.length - 1; index++) {
+            if (arrofmessages[index].trim() !== "") {
+                let tempargs = JSON.parse(JSON.stringify(args));
+                tempargs[1].content = arrofmessages[index];
+                tempargs[1].validNonShortcutEmojis = [];
+                BdApi.findModuleByProps("sendMessage").sendMessage(args[0], tempargs[1], undefined, {});
             }
-        }])
-        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getActiveSocketAndDevice"), "getActiveSocketAndDevice", (_, args, ret) => { ret.socket.isPremium = true; return ret });
-    }
-
-    patchGuildPermission = () => {
-        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("canAccessGuildSettings"), "canAccessGuildSettings", (_, args, ret) => {
-            return ret = true;
-        });
-        BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getGuildPermissions").__proto__, "getGuildPermissionProps", (_, args, ret) => {
-            ret.canViewGuildAnalytics = true;
-            ret.canManageGuild = true;
-            ret.canManageRoles = true;
-            ret.canManageChannels = true;
-            ret.canManageWebhooks = true;
-            return ret;
-        })
-    }
-
-    // was in original plugin it allows you to talk in vcs before the 10 minute timer when joining a new server
-    patchVerificationCriteria = () => {
-        if (this.patchVerificationCriteriaModule === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try {
-                        typeof m?.exports === "object" && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if (typeof m.exports[elem] === "object") {
-                                if (m.exports[elem] !== null && m.exports[elem] !== undefined && Object.keys(m.exports[elem])[0] === "ACCOUNT_AGE") {
-                                    this.patchVerificationCriteriaModule = m.exports;
-                                    this.patchVerificationCriteriaKey = elem;
-                                    if (this.patchVerificationCriteriaOrignalReq === undefined) {
-                                        this.patchVerificationCriteriaOrignalReq = m.exports[elem];
-                                    }
-                                }
-                            }
-                        })
-                    } catch (e) { console.error(e) }
-                }
-            }])
         }
+        args[1].content = arrofmessages.pop();
+    });
+}
 
-        if (this.patchVerificationCriteriaModule === undefined)
-            console.error(this.getName(), "Unable to find Vericiation Criteria Module, search for MEMBER_AGE in all folders");
 
-        // v8 has since made this cause a type error... so I am switching to a hacky solution
-        // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
-        //     value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
-        // })
-        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }};
+patchSpotifyPrem = () => {// this will allow you to listen along, etc. without premium
 
-    }
+    var key = undefined;
+    var spotifyModule = moduleDepth1((e)=>e[1]?.toString?.()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && (key = e[0]))?.[0]?.exports;
+    if(spotifyModule == undefined || key == undefined)
+        return console.error(this.getName(), "Failed to find spotify module");
 
-    unpatchVerificationCriteria = () => {
-        if (this.patchVerificationCriteriaOrignalReq === undefined)
-            return console.error(this.getName(), "Attempted to restore the original verification criteria but they dont exist");
-        
-        // Object.defineProperty(this.patchVerificationCriteriaModule, this.patchVerificationCriteriaKey, {
-        //     value: this.patchVerificationCriteriaOrignalReq, configurable: true
-        // });
-        this.patchVerificationCriteriaModule = {...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey] : this.patchVerificationCriteriaOrignalReq };
-    }
+    BdApi.Patcher.instead(this.getName(), spotifyModule, key, async (e, t) => {
+        BdApi.findModuleByProps("dispatch").dispatch({
+            type: "SPOTIFY_PROFILE_UPDATE",
+            accountId: e,
+            isPremium: true,
+        });
+        return t;
+    })
 
-    getSettingsPanel = () => {
-        let currentres = BdApi.Data.load(this.getName(), "resolution");
-        let currentfps = BdApi.Data.load(this.getName(), "frameRate");
-        let preview = BdApi.Data.load(this.getName(), "preview");
-        return `<div>
+    BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getActiveSocketAndDevice"), "getActiveSocketAndDevice", (_, args, ret) => { ret.socket.isPremium = true; return ret });
+}
+
+patchGuildPermission = () => {
+    BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("canAccessGuildSettings"), "canAccessGuildSettings", (_, args, ret) => {
+        return ret = true;
+    });
+    BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getGuildPermissions").__proto__, "getGuildPermissionProps", (_, args, ret) => {
+        ret.canViewGuildAnalytics = true;
+        ret.canManageGuild = true;
+        ret.canManageRoles = true;
+        ret.canManageChannels = true;
+        ret.canManageWebhooks = true;
+        return ret;
+    })
+}
+
+// was in original plugin it allows you to talk in vcs before the 10 minute timer when joining a new server
+patchVerificationCriteria = () => {
+
+    if(this.patchVerificationCriteriaOrignalReq == undefined)
+        this.patchVerificationCriteriaOrignalReq = BdApi.findModuleByProps("VerificationCriteria").VerificationCriteria;
+
+    Object.defineProperty(BdApi.findModuleByProps("VerificationCriteria"), "VerificationCriteria", {
+        value: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 }, configurable: true
+    })
+    //this.patchVerificationCriteriaModule = { ...this.patchVerificationCriteriaModule, [this.patchVerificationCriteriaKey]: { "ACCOUNT_AGE": 0, "MEMBER_AGE": 0 } };
+}
+
+unpatchVerificationCriteria = () => {
+    if (this.patchVerificationCriteriaOrignalReq === undefined)
+        return console.error(this.getName(), "Attempted to restore the original verification criteria but they dont exist");
+
+    Object.defineProperty(BdApi.findModuleByProps("VerificationCriteria"), "VerificationCriteria", {
+        value: this.patchVerificationCriteriaOrignalReq, configurable: true
+    });
+}
+
+getSettingsPanel = () => {
+    let currentres = BdApi.Data.load(this.getName(), "resolution");
+    let currentfps = BdApi.Data.load(this.getName(), "frameRate");
+    let preview = BdApi.Data.load(this.getName(), "preview");
+    return `<div>
             <div>
                 <label>Frame Rate</label>
                 <input type="range" min="1" max="144" value="${currentfps}"oninput="this.nextElementSibling.innerText = this.value" onchange='BdApi.Data.save("${this.getName()}","frameRate",this.value);'\\>
@@ -314,16 +266,16 @@ module.exports = class StreamSettings {
                 </div>
             </div>
         </div>`;
-    }
+}
 
-    stop = () => {
-        console.log(`[CustomStreamSettings] Unpatching all patches`);
+stop = () => {
+    console.log(`[CustomStreamSettings] Unpatching all patches`);
 
-        BdApi.Patcher.unpatchAll(this.getName());
+    BdApi.Patcher.unpatchAll(this.getName());
 
-        this.unpatchVerificationCriteria();
+    this.unpatchVerificationCriteria();
 
-        console.log("[CustomStreamSettings] Stopped");
-        BdApi.UI.showToast("[CustomStreamSettings] Stopped");
-    }
+    console.log("[CustomStreamSettings] Stopped");
+    BdApi.UI.showToast("[CustomStreamSettings] Stopped");
+}
 }
