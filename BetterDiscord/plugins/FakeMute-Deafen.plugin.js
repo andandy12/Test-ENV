@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/FakeMute-Deafen.plugin.js
  * @description Allows you to fake mute and deafen.
- * @version 0.0.4
+ * @version 0.0.5
  */
 module.exports = class FalseMute {
 
     getName() { return "Fake Mute and Deafen"; };
     getDescription() { return "Allows you to fake mute and deafen."; };
-    getVersion() { return "0.0.4"; };
+    getVersion() { return "0.0.5"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -19,19 +19,30 @@ module.exports = class FalseMute {
         this.doFakeMuteDeafPatch();
     }
 
+    modules = undefined;
+    populateModules = () => {
+        window.webpackChunkdiscord_app.push([[Symbol()], {}, r => this.modules = r]);
+    }
+    getModules = () => {
+        this.populateModules();
+        return modules.c;
+    }
+    findModules = (cond) => {
+        return Object.values(this.getModules()).filter(m => cond(m) == true);
+    }
+
+    moduleDepth1 = (cond) => {
+        return findModules((m) => {
+            try {
+                return m?.exports != undefined && Object.entries(m.exports).find(e => cond(e)) != undefined
+            } catch (e) { return false; }
+        });
+    }
+
     doFakeMuteDeafPatch() {
 
         if (this.socket === undefined) {
-            window.webpackChunkdiscord_app.push([[Math.random()], {}, (req) => {
-                for (const m of Object.keys(req.c).map((id) => req.c[id]).filter((id) => id)) {
-                    try { // sometime the module has exports from a different frame so this is a lazy fix
-                        m?.exports !== undefined && Object.keys(m.exports).forEach((elem, index, array) => {
-                            if (m?.exports?.[elem]?.__proto__?.getSocket !== undefined)
-                                this.socket = m.exports?.[elem]?.__proto__?.getSocket();
-                        })
-                    } catch (e) { console.error(this.getName(), e) }
-                }
-            }]);
+            moduleDepth1((e)=>{return e[1]?.__proto__?.getSocket !== undefined && (this.socket = e[1]?.__proto__?.getSocket())});
             if (typeof this.socket?.send != "function")
                 throw new Error("Failed to get websocket");
         }
