@@ -8,7 +8,7 @@
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.12"; };
+    getVersion() { return "0.0.13"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -23,7 +23,7 @@ module.exports = class StreamSettings {
         this.patchsetDesktopSource();
         this.patchStreamPreview();
         // everything below is bypasses I previously had in old plugins
-        //this.patchForEmojis();
+        this.patchForEmojis();
         this.patchVerificationCriteria();
         this.patchGuildPermission();
         this.patchSpotifyPrem();
@@ -116,8 +116,30 @@ patchStreamPreview = () => {
 }
 
 patchForEmojis = () => { // this will allow you to type emojis and have them auto embed
-    BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
-    BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
+
+    // This is really gross I can't be asked to make this better
+    this.canUseAnimatedEmojisModule = this.findModules((e)=>e?.exports?.default?.canUseAnimatedEmojis != undefined)[0];
+    if(this.canUseAnimatedEmojisModuleOriginal == undefined)
+        this.canUseAnimatedEmojisModuleOriginal = this.canUseAnimatedEmojisModule.exports.default.canUseAnimatedEmojis;
+    this.canUseAnimatedEmojisModule.exports.default = { ...this.canUseAnimatedEmojisModule.exports.default, ["canUseAnimatedEmojis"]: ()=>{return true} };
+    this.unpatchcanUseAnimatedEmojis = ()=>{this.canUseAnimatedEmojisModule.exports.default = { ...this.canUseAnimatedEmojisModule.exports.default, ["canUseAnimatedEmojis"]: this.canUseAnimatedEmojisModuleOriginal }};
+
+    this.canUseEmojisEverywhereModule = this.findModules((e)=>e?.exports?.default?.canUseEmojisEverywhere != undefined)[0];
+    if(this.canUseEmojisEverywhereModuleOriginal == undefined)
+        this.canUseEmojisEverywhereModuleOriginal = this.canUseEmojisEverywhereModule.exports.default.canUseEmojisEverywhere;
+    this.canUseEmojisEverywhereModule.exports.default = { ...this.canUseEmojisEverywhereModule.exports.default, ["canUseEmojisEverywhere"]: ()=>{return true} };
+    this.unpatchcanUseEmojisEverywhere = ()=>{this.canUseEmojisEverywhereModule.exports.default = { ...this.canUseEmojisEverywhereModule.exports.default, ["canUseEmojisEverywhere"]: this.canUseEmojisEverywhereModuleOriginal }};
+
+    this.canUseSoundboardEverywhereModule = this.findModules((e)=>e?.exports?.default?.canUseSoundboardEverywhere != undefined)[0];
+    if(this.canUseSoundboardEverywhereModuleOriginal == undefined)
+        this.canUseSoundboardEverywhereModuleOriginal = this.canUseSoundboardEverywhereModule.exports.default.canUseSoundboardEverywhere;
+    this.canUseSoundboardEverywhereModule.exports.default = { ...this.canUseSoundboardEverywhereModule.exports.default, ["canUseSoundboardEverywhere"]: ()=>{return true} };
+    this.unpatchcanUseSoundboardEverywhere = ()=>{this.canUseSoundboardEverywhereModule.exports.default = { ...this.canUseSoundboardEverywhereModule.exports.default, ["canUseSoundboardEverywhere"]: this.canUseSoundboardEverywhereModuleOriginal }};
+
+
+    //BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
+    //BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseEmojisEverywhere", (_, args, ret) => { return true });
+    //BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseSoundboardEverywhere", (_, args, ret) => { return true });
     BdApi.Patcher.before(this.getName(), BdApi.findModuleByProps("sendMessage"), "sendMessage", (_, args, ret) => {
         let arrofmessages = [args[1].content];
         args[1]?.validNonShortcutEmojis?.filter(e => e.managed !== true)?.forEach((emoji, index, array) => {
@@ -275,6 +297,9 @@ stop = () => {
     BdApi.Patcher.unpatchAll(this.getName());
 
     this.unpatchVerificationCriteria();
+    this.unpatchcanUseAnimatedEmojis();
+    this.unpatchcanUseEmojisEverywhere();
+    this.unpatchcanUseSoundboardEverywhere();
 
     console.log("[CustomStreamSettings] Stopped");
     BdApi.UI.showToast("[CustomStreamSettings] Stopped");
