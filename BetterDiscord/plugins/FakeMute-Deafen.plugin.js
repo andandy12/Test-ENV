@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/FakeMute-Deafen.plugin.js
  * @description Allows you to fake mute and deafen.
- * @version 0.0.5
+ * @version 0.0.4
  */
 module.exports = class FalseMute {
 
     getName() { return "Fake Mute and Deafen"; };
     getDescription() { return "Allows you to fake mute and deafen."; };
-    getVersion() { return "0.0.5"; };
+    getVersion() { return "0.0.4"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -25,7 +25,7 @@ module.exports = class FalseMute {
     }
     getModules = () => {
         this.populateModules();
-        return modules.c;
+        return this.modules.c;
     }
     findModules = (cond) => {
         return Object.values(this.getModules()).filter(m => cond(m) == true);
@@ -42,7 +42,7 @@ module.exports = class FalseMute {
     doFakeMuteDeafPatch() {
 
         if (this.socket === undefined) {
-            moduleDepth1((e)=>{return e[1]?.__proto__?.getSocket !== undefined && (this.socket = e[1]?.__proto__?.getSocket())});
+            this.moduleDepth1((e)=>{return e[1]?.__proto__?.getSocket !== undefined && (this.socket = e[1]?.__proto__?.getSocket())});
             if (typeof this.socket?.send != "function")
                 throw new Error("Failed to get websocket");
         }
