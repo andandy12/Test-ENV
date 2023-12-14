@@ -3,12 +3,12 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.14
+ * @version 0.0.12
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
     getDescription() { return "More control over screensharing."; };
-    getVersion() { return "0.0.14"; };
+    getVersion() { return "0.0.12"; };
     getAuthor() { return "andandy12"; };
 
     start() {
@@ -35,14 +35,14 @@ module.exports = class StreamSettings {
     }
     getModules = () => {
         this.populateModules();
-        return modules.c;
+        return this.modules.c;
     }
     findModules = (cond) => {
         return Object.values(this.getModules()).filter(m => cond(m) == true);
     }
 
     moduleDepth1 = (cond) => {
-        return findModules((m) => {
+        return this.findModules((m) => {
             try {
                 return m?.exports != undefined && Object.entries(m.exports).find(e => cond(e)) != undefined
             } catch (e) { return false; }
@@ -51,7 +51,7 @@ module.exports = class StreamSettings {
 
     patchsetDesktopSource = () => {
         if (this.mediaEngine === undefined) {
-            moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
+            this.moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
         }
 
         // 7-22-23 Discord retired the old function and is now using setGoLiveSource
@@ -76,7 +76,7 @@ module.exports = class StreamSettings {
 setHwndAsSoundshareSource = (hwnd) => {
     console.log(`setHwndAsSoundshareSource ${hwnd}`);
     if (this?.discord_utilsModule === undefined) {
-        moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.requireModule("discord_utils")))
+        this.moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.requireModule("discord_utils")))
     }
     this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
 }
@@ -84,10 +84,10 @@ setHwndAsSoundshareSource = (hwnd) => {
 setPidAsSoundshareSource = (pid) => {
     console.log(`setPidAsSoundshareSource ${pid}`);
     if (this.mediaEngine === undefined) {
-        moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
+        this.moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
     }
     if (this?.discord_utilsModule === undefined) {
-        moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.[elem]?.requireModule("discord_utils")))
+        this.moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.[elem]?.requireModule("discord_utils")))
     }
     //BdApi.findModuleByProps("getMediaEngine").getMediaEngine().setSoundshareSource(12812, true, "stream")
     this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
@@ -103,6 +103,7 @@ patchStreamPreview = () => {
                 args[1].thumbnail = "data:image/jpeg;base64,"; // replace the thumbnail with an empty image
         }
     })
+    // 12-13-23 BROKEN 
     // this patch will remove any preview with a data url syncing what you see with the server
     BdApi.Patcher.after(this.getName(), BdApi.findModuleByProps("getPreviewURL"), "getPreviewURL", (_, args, ret) => {
         if (ret?.startsWith("data:image/jpeg;base64,") === true) {
@@ -148,7 +149,7 @@ patchForEmojis = () => { // this will allow you to type emojis and have them aut
 patchSpotifyPrem = () => {// this will allow you to listen along, etc. without premium
 
     var key = undefined;
-    var spotifyModule = moduleDepth1((e)=>e[1]?.toString?.()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && (key = e[0]))?.[0]?.exports;
+    var spotifyModule = this.moduleDepth1((e)=>e[1]?.toString?.()?.includes(`{type:"SPOTIFY_PROFILE_UPDATE",accountId:`) && (key = e[0]))?.[0]?.exports;
     if(spotifyModule == undefined || key == undefined)
         return console.error(this.getName(), "Failed to find spotify module");
 
