@@ -3,13 +3,13 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/FakeMute-Deafen.plugin.js
  * @description Allows you to fake mute and deafen.
- * @version 0.0.4
+ * @version 0.0.5
  */
 module.exports = class FalseMute {
 
     getName() { return "Fake Mute and Deafen"; };
     getDescription() { return "Allows you to fake mute and deafen."; };
-    getVersion() { return "0.0.4"; };
+    getVersion() { return "0.0.5"; };
     getAuthor() { return "andandy12"; };
 
     start() {
