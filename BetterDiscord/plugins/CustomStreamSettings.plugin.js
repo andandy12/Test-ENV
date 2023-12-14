@@ -3,7 +3,7 @@
  * @author andandy12
  * @updateUrl https://raw.githubusercontent.com/andandy12/Test-ENV/main/BetterDiscord/plugins/CustomStreamSettings.plugin.js
  * @description More control over screensharing.
- * @version 0.0.12
+ * @version 0.0.13
  */
 module.exports = class StreamSettings {
     getName() { return "CustomStreamSettings"; };
