@@ -32,7 +32,7 @@ module.exports = class FalseMute {
     }
 
     moduleDepth1 = (cond) => {
-        return findModules((m) => {
+        return this.findModules((m) => {
             try {
                 return m?.exports != undefined && Object.entries(m.exports).find(e => cond(e)) != undefined
             } catch (e) { return false; }
