@@ -27,6 +27,7 @@ module.exports = class StreamSettings {
         this.patchVerificationCriteria();
         this.patchGuildPermission();
         this.patchSpotifyPrem();
+        this.setupMainScreenShareZoomInterval();
     }
 
     modules = undefined;
@@ -73,11 +74,63 @@ module.exports = class StreamSettings {
 
     }
 
+    setupMainScreenShareZoomInterval = () => {
+
+        this.zoomInterval = setInterval(()=>{
+            document.querySelectorAll('[class*=videoFrame]:not(.zoomScroll)').forEach((element)=>{
+                var scale = 1;
+                var factor = 0.05;
+                var max_scale = 4;
+                divMain = element;
+                divMain.classList += " zoomScroll";
+                divMain.addEventListener('wheel', (e) => {
+                    if (!e.ctrlKey) {
+                        return;
+                    }
+                
+                    e.preventDefault();
+                    var delta = e.delta || e.wheelDelta;
+                    if (delta === undefined) {
+                        //we are on firefox
+                        delta = e.originalEvent.detail;
+                    }
+                    delta = Math.max(-1,Math.min(1,delta)); // cap the delta to [-1,1] for cross browser consistency
+                
+                    var offset = {x: divMain.scrollLeft, y: divMain.scrollTop};
+                    var image_loc = {
+                        x: e.pageX + offset.x,
+                        y: e.pageY + offset.y
+                    };
+                
+                    var zoom_point = {x:image_loc.x/scale, y: image_loc.y/scale};
+                
+                    // apply zoom
+                    scale += delta*factor * scale;
+                    scale = Math.max(1,Math.min(max_scale,scale));
+                
+                    var zoom_point_new = {x:zoom_point.x * scale, y: zoom_point.y * scale};
+                
+                    var newScroll = {
+                        x: zoom_point_new.x - e.pageX,
+                        y: zoom_point_new.y - e.pageY
+                    };
+                
+                    divMain.style.transform = `scale(${scale}, ${scale})`;
+                    divMain.scrollTop = newScroll.y;
+                    divMain.scrollLeft = newScroll.x;
+                    
+                    let x = e.layerX; //x position within the element
+                    let y = e.layerY; //y position within the element
+                
+                    divMain.style.transformOrigin = `${x / divMain.offsetWidth * 100}% ${y / divMain.offsetHeight * 100}%`;
+                });
+            })
+        },1000);
+    }
+
 setHwndAsSoundshareSource = (hwnd) => {
     console.log(`setHwndAsSoundshareSource ${hwnd}`);
-    if (this?.discord_utilsModule === undefined) {
-        this.moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.requireModule("discord_utils")))
-    }
+    this.discord_utilsModule = window.DiscordNative.nativeModules.requireModule("discord_utils");
     this.setPidAsSoundshareSource(this.discord_utilsModule.getPidFromWindowHandle(hwnd));
 }
 
@@ -86,9 +139,7 @@ setPidAsSoundshareSource = (pid) => {
     if (this.mediaEngine === undefined) {
         this.moduleDepth1((e)=>e[1]?.getMediaEngine != undefined && (this.mediaEngine = e[1].getMediaEngine()))
     }
-    if (this?.discord_utilsModule === undefined) {
-        this.moduleDepth1((e)=>e[1]?.requireModule != undefined && (this.discord_utilsModule = e[1]?.[elem]?.requireModule("discord_utils")))
-    }
+    this.discord_utilsModule = window.DiscordNative.nativeModules.requireModule("discord_utils");
     //BdApi.findModuleByProps("getMediaEngine").getMediaEngine().setSoundshareSource(12812, true, "stream")
     this.mediaEngine.setSoundshareSource(this.discord_utilsModule.getAudioPid(pid), true, "stream");
 }
@@ -135,6 +186,12 @@ patchForEmojis = () => { // this will allow you to type emojis and have them aut
         this.canUseSoundboardEverywhereModuleOriginal = this.canUseSoundboardEverywhereModule.exports.default.canUseSoundboardEverywhere;
     this.canUseSoundboardEverywhereModule.exports.default = { ...this.canUseSoundboardEverywhereModule.exports.default, ["canUseSoundboardEverywhere"]: ()=>{return true} };
     this.unpatchcanUseSoundboardEverywhere = ()=>{this.canUseSoundboardEverywhereModule.exports.default = { ...this.canUseSoundboardEverywhereModule.exports.default, ["canUseSoundboardEverywhere"]: this.canUseSoundboardEverywhereModuleOriginal }};
+
+    this.canUseCustomCallSoundsModule = this.findModules((e)=>e?.exports?.default?.canUseCustomCallSounds != undefined)[0];
+    if(this.canUseCustomCallSoundsModuleOriginal == undefined)
+        this.canUseCustomCallSoundsModuleOriginal = this.canUseCustomCallSoundsModule.exports.default.canUseCustomCallSounds;
+    this.canUseCustomCallSoundsModule.exports.default = { ...this.canUseCustomCallSoundsModule.exports.default, ["canUseCustomCallSounds"]: ()=>{return true} };
+    this.unpatchcanUseCustomCallSounds = ()=>{this.canUseCustomCallSoundsModule.exports.default = { ...this.canUseCustomCallSoundsModule.exports.default, ["canUseCustomCallSounds"]: this.canUseCustomCallSoundsModuleOriginal }};
 
 
     //BdApi.Patcher.instead(this.getName(), BdApi.findModuleByProps("getPremiumGradientColor"), "canUseAnimatedEmojis", (_, args, ret) => { return true });
@@ -295,6 +352,8 @@ stop = () => {
     console.log(`[CustomStreamSettings] Unpatching all patches`);
 
     BdApi.Patcher.unpatchAll(this.getName());
+
+    clearInterval(this.zoomInterval,1000);
 
     this.unpatchVerificationCriteria();
     this.unpatchcanUseAnimatedEmojis();
